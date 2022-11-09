@@ -1,1 +1,7 @@
-<h1>Cloudproof Encryption Python Library</h1>
+# Cloudproof Encryption Python Library
+
+## Build
+
+```sh
+$ python -m build
+```
