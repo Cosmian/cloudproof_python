@@ -11,6 +11,7 @@ from cosmian_cover_crypt import (
 )
 
 from cosmian_findex import IndexedValue, Label, MasterKey, PyFindex
+from .findex import IFindex
 
 __all__ = [
     "Attribute",
@@ -25,4 +26,5 @@ __all__ = [
     "Label",
     "MasterKey",
     "PyFindex",
+    "IFindex",
 ]

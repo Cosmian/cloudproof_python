@@ -2,7 +2,7 @@
 Findex
 ************************************************************
 
-.. autoclass:: pycloudproof.PyFindex
+.. autoclass:: pycloudproof.IFindex
   :members:
   :inherited-members:
   :member-order: bysource
