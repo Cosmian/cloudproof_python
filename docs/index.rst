@@ -1,12 +1,17 @@
 Welcome to PyCloudProof's documentation!
 ========================================
 
-API documentation
+CoverCrypt
 -----------------
 
 .. toctree::
    :maxdepth: 2
 
-   policy
-   key
    covercrypt
+
+Findex
+-----------------
+.. toctree::
+   :maxdepth: 2
+
+   findex

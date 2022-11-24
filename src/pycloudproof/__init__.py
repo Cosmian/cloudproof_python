@@ -10,13 +10,19 @@ from cosmian_cover_crypt import (
     UserSecretKey,
 )
 
+from cosmian_findex import IndexedValue, Label, MasterKey, PyFindex
+
 __all__ = [
-    Attribute,
-    PolicyAxis,
-    Policy,
-    CoverCrypt,
-    SymmetricKey,
-    MasterSecretKey,
-    PublicKey,
-    UserSecretKey,
+    "Attribute",
+    "PolicyAxis",
+    "Policy",
+    "CoverCrypt",
+    "SymmetricKey",
+    "MasterSecretKey",
+    "PublicKey",
+    "UserSecretKey",
+    "IndexedValue",
+    "Label",
+    "MasterKey",
+    "PyFindex",
 ]

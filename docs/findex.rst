@@ -1,20 +1,26 @@
 ************************************************************
-Policy Creation
+Findex
 ************************************************************
 
-.. autoclass:: pycloudproof.Policy
+.. autoclass:: pycloudproof.PyFindex
   :members:
   :inherited-members:
   :member-order: bysource
   :undoc-members:
 
-.. autoclass:: pycloudproof.Attribute
+.. autoclass:: pycloudproof.MasterKey
   :members:
   :inherited-members:
   :member-order: bysource
   :undoc-members:
 
-.. autoclass:: pycloudproof.PolicyAxis
+.. autoclass:: pycloudproof.Label
+  :members:
+  :inherited-members:
+  :member-order: bysource
+  :undoc-members:
+
+.. autoclass:: pycloudproof.IndexedValue
   :members:
   :inherited-members:
   :member-order: bysource
