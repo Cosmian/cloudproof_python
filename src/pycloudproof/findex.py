@@ -16,10 +16,34 @@ class IFindex(metaclass=ABCMeta):
             self.progress_callback,
         )
 
-    def upsert(self, dict_indexed_values, master_key, label) -> None:
+    def upsert(
+        self,
+        dict_indexed_values: Dict[bytes, List[bytes]],
+        master_key: MasterKey,
+        label: Label,
+    ) -> None:
+        """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
+
+        Args:
+            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue` to `Keyword`
+            master_key (MasterKey): the user master key
+            label (Label): label used to allow versioning
+        """
         self.findex.upsert_wrapper(dict_indexed_values, master_key, label)
 
-    def graph_upsert(self, dict_indexed_values, master_key, label) -> None:
+    def graph_upsert(
+        self,
+        dict_indexed_values: Dict[bytes, List[bytes]],
+        master_key: MasterKey,
+        label: Label,
+    ) -> None:
+        """Build the graph of a `KeyWord` and upsert it.
+
+        Args:
+            dict_indexed_values (Dict[bytes, List[bytes]]):  map of `IndexedValue` to `Keyword`
+            master_key (MasterKey): the user master key
+            label (Label): label used to allow versioning
+        """
         self.findex.graph_upsert_wrapper(dict_indexed_values, master_key, label)
 
     def search(
@@ -30,13 +54,38 @@ class IFindex(metaclass=ABCMeta):
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
     ) -> List[IndexedValue]:
+        """_summary_
+
+        Args:
+            keywords (List[str]): keywords to search using Findex
+            master_key (MasterKey): user secret key
+            label (Label): public label used in keyword hashing
+            max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
+            max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
+
+        Returns:
+            List[IndexedValue]: UIDs corresponding to the keywords
+        """
         return self.findex.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
         )
 
     def compact(
-        self, num_reindexing_before_full_set, master_key, new_master_key, new_label
+        self,
+        num_reindexing_before_full_set: int,
+        master_key: MasterKey,
+        new_master_key: MasterKey,
+        new_label: Label,
     ) -> None:
+        """Performs compacting on the entry and chain tables
+
+        Args:
+            num_reindexing_before_full_set (int): number of compacting to do before
+            being sure that a big portion of the indexes were checked
+            master_key (MasterKey): current master key
+            new_master_key (MasterKey): newly generated key
+            new_label (Label): newly generated label
+        """
         self.findex.compact_wrapper(
             num_reindexing_before_full_set, master_key, new_master_key, new_label
         )
@@ -48,8 +97,7 @@ class IFindex(metaclass=ABCMeta):
         """Query the entry table
 
         Args:
-            entry_uids (List[bytes], optional): uids to query.
-            if None, return the entire table
+            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
             Dict[bytes, bytes]
@@ -141,10 +189,7 @@ class IFindex(metaclass=ABCMeta):
         implications. This implementation keep the database small but prevent
         using the index during the `update_lines`.
 
-        Other possibility:
-
-        During a small duration, the index tables are much bigger but users can
-        continue using the index during the `update_lines`.
+        Override this method if you want another implementation, e.g. :
 
         1. save all UIDs from the current Index Entry Table
         2. add `new_encrypted_entry_table_items` to the Index Entry Table
@@ -153,6 +198,8 @@ class IFindex(metaclass=ABCMeta):
         5. remove old lines from the Index Entry Table (using the saved UIDs in 1.)
         6. remove `removed_chain_table_uids` from the Index Chain Table
 
+        With this implementation, the index tables are much bigger during a small duration,
+        but users can continue using the index during the `update_lines`.
         """
 
         self.remove_entry_table()
