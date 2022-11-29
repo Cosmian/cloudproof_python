@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sqlite3
-from pycloudproof import IFindex, IndexedValue, MasterKey, Label
+from cloudproof_py import IFindex, IndexedValue, MasterKey, Label
 from typing import Dict, List, Optional
 
 

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from cosmian_cover_crypt import (
     Attribute,
-    Policy,
     PolicyAxis,
     CoverCrypt,
     SymmetricKey,
@@ -12,6 +11,7 @@ from cosmian_cover_crypt import (
 
 from cosmian_findex import IndexedValue, Label, MasterKey, PyFindex
 from .findex import IFindex
+from .cover_crypt import Policy
 
 __all__ = [
     "Attribute",
