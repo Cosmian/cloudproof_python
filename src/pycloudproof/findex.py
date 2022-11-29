@@ -16,80 +16,6 @@ class IFindex(metaclass=ABCMeta):
             self.progress_callback,
         )
 
-    def upsert(
-        self,
-        dict_indexed_values: Dict[bytes, List[bytes]],
-        master_key: MasterKey,
-        label: Label,
-    ) -> None:
-        """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
-
-        Args:
-            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue` to `Keyword`
-            master_key (MasterKey): the user master key
-            label (Label): label used to allow versioning
-        """
-        self.findex.upsert_wrapper(dict_indexed_values, master_key, label)
-
-    def graph_upsert(
-        self,
-        dict_indexed_values: Dict[bytes, List[bytes]],
-        master_key: MasterKey,
-        label: Label,
-    ) -> None:
-        """Build the graph of a `KeyWord` and upsert it.
-
-        Args:
-            dict_indexed_values (Dict[bytes, List[bytes]]):  map of `IndexedValue` to `Keyword`
-            master_key (MasterKey): the user master key
-            label (Label): label used to allow versioning
-        """
-        self.findex.graph_upsert_wrapper(dict_indexed_values, master_key, label)
-
-    def search(
-        self,
-        keywords: List[str],
-        master_key: MasterKey,
-        label: Label,
-        max_result_per_keyword: int = 2**32 - 1,
-        max_depth: int = 100,
-    ) -> List[IndexedValue]:
-        """_summary_
-
-        Args:
-            keywords (List[str]): keywords to search using Findex
-            master_key (MasterKey): user secret key
-            label (Label): public label used in keyword hashing
-            max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
-            max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
-
-        Returns:
-            List[IndexedValue]: UIDs corresponding to the keywords
-        """
-        return self.findex.search_wrapper(
-            keywords, master_key, label, max_result_per_keyword, max_depth
-        )
-
-    def compact(
-        self,
-        num_reindexing_before_full_set: int,
-        master_key: MasterKey,
-        new_master_key: MasterKey,
-        new_label: Label,
-    ) -> None:
-        """Performs compacting on the entry and chain tables
-
-        Args:
-            num_reindexing_before_full_set (int): number of compacting to do before
-            being sure that a big portion of the indexes were checked
-            master_key (MasterKey): current master key
-            new_master_key (MasterKey): newly generated key
-            new_label (Label): newly generated label
-        """
-        self.findex.compact_wrapper(
-            num_reindexing_before_full_set, master_key, new_master_key, new_label
-        )
-
     @abstractmethod
     def fetch_entry_table(
         self, entry_uids: Optional[List[bytes]] = None
@@ -135,8 +61,8 @@ class IFindex(metaclass=ABCMeta):
         """Remove entries from entry table
 
         Args:
-            entry_uids (List[bytes], optional): uid of entries to delete.
-            if None, delete all entries
+            entry_uids (List[bytes], optional): uid of entries to delete. if None,
+                delete all entries
         """
 
     @abstractmethod
@@ -206,3 +132,77 @@ class IFindex(metaclass=ABCMeta):
         self.upsert_entry_table(new_encrypted_entry_table_items)
         self.remove_chain_table(removed_chain_table_uids)
         self.upsert_chain_table(new_encrypted_chain_table_items)
+
+    def upsert(
+        self,
+        dict_indexed_values: Dict[str, List[str]],
+        master_key: MasterKey,
+        label: Label,
+    ) -> None:
+        """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
+
+        Args:
+            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue` to `Keyword`
+            master_key (MasterKey): the user master key
+            label (Label): label used to allow versioning
+        """
+        self.findex.upsert_wrapper(dict_indexed_values, master_key, label)
+
+    def graph_upsert(
+        self,
+        dict_indexed_values: Dict[str, List[str]],
+        master_key: MasterKey,
+        label: Label,
+    ) -> None:
+        """Build the graph of a `KeyWord` and upsert it.
+
+        Args:
+            dict_indexed_values (Dict[bytes, List[bytes]]):  map of `IndexedValue` to `Keyword`
+            master_key (MasterKey): the user master key
+            label (Label): label used to allow versioning
+        """
+        self.findex.graph_upsert_wrapper(dict_indexed_values, master_key, label)
+
+    def search(
+        self,
+        keywords: List[str],
+        master_key: MasterKey,
+        label: Label,
+        max_result_per_keyword: int = 2**32 - 1,
+        max_depth: int = 100,
+    ) -> List[IndexedValue]:
+        """_summary_
+
+        Args:
+            keywords (List[str]): keywords to search using Findex
+            master_key (MasterKey): user secret key
+            label (Label): public label used in keyword hashing
+            max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
+            max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
+
+        Returns:
+            List[IndexedValue]: UIDs corresponding to the keywords
+        """
+        return self.findex.search_wrapper(
+            keywords, master_key, label, max_result_per_keyword, max_depth
+        )
+
+    def compact(
+        self,
+        num_reindexing_before_full_set: int,
+        master_key: MasterKey,
+        new_master_key: MasterKey,
+        new_label: Label,
+    ) -> None:
+        """Performs compacting on the entry and chain tables
+
+        Args:
+            num_reindexing_before_full_set (int): number of compacting to do before
+            being sure that a big portion of the indexes were checked
+            master_key (MasterKey): current master key
+            new_master_key (MasterKey): newly generated key
+            new_label (Label): newly generated label
+        """
+        self.findex.compact_wrapper(
+            num_reindexing_before_full_set, master_key, new_master_key, new_label
+        )

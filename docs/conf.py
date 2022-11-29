@@ -14,7 +14,11 @@ author = "Cosmian Tech"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx_rtd_theme", "sphinx.ext.napoleon"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx_rtd_theme",
+    "sphinx.ext.napoleon",
+]
 
 
 templates_path = ["_templates"]

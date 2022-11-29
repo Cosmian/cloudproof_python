@@ -1,7 +1,22 @@
 # Cloudproof Encryption Python Library
 
-## Build
+## Build package
 
 ```sh
-$ python -m build
+pip install -r requirements.txt
+python -m build
+```
+
+## Build docs
+
+```sh
+pip install -r docs/requirements.txt
+cd docs
+make html
+```
+
+## Run demo
+
+```sh
+...
 ```
