@@ -15,11 +15,15 @@ author = "Cosmian Tech"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
+    # "sphinx.ext.autodoc",
     "sphinx_rtd_theme",
     "sphinx.ext.napoleon",
 ]
+extensions.append("autoapi.extension")
 
+autoapi_type = "python"
+autoapi_dirs = ["../src"]
+autoapi_file_patterns = ["*.pyi", "*.py"]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]

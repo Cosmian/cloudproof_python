@@ -171,7 +171,7 @@ class IFindex(metaclass=ABCMeta):
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
     ) -> List[IndexedValue]:
-        """_summary_
+        """Recursively search Findex graphs for `Location` corresponding to the given `KeyWord`.
 
         Args:
             keywords (List[str]): keywords to search using Findex
