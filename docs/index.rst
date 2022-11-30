@@ -1,5 +1,5 @@
-Welcome to PyCloudProof's documentation!
-========================================
+Welcome to CloudProof_Py's documentation!
+=========================================
 
 CoverCrypt
 -----------------

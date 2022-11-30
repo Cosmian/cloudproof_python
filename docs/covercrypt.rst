@@ -2,7 +2,7 @@
 Encryption and Decryption
 ************************************************************
 
-.. autoclass:: pycloudproof.CoverCrypt
+.. autoclass:: cloudproof_py.CoverCrypt
   :members:
   :inherited-members:
   :member-order: bysource
@@ -12,25 +12,25 @@ Encryption and Decryption
 Keys
 ************************************************************
 
-.. autoclass:: pycloudproof.MasterSecretKey
+.. autoclass:: cloudproof_py.MasterSecretKey
   :members:
   :inherited-members:
   :member-order: bysource
   :undoc-members:
 
-.. autoclass:: pycloudproof.PublicKey
+.. autoclass:: cloudproof_py.PublicKey
   :members:
   :inherited-members:
   :member-order: bysource
   :undoc-members:
 
-.. autoclass:: pycloudproof.UserSecretKey
+.. autoclass:: cloudproof_py.UserSecretKey
   :members:
   :inherited-members:
   :member-order: bysource
   :undoc-members:
 
-.. autoclass:: pycloudproof.SymmetricKey
+.. autoclass:: cloudproof_py.SymmetricKey
   :members:
   :inherited-members:
   :member-order: bysource
@@ -40,19 +40,19 @@ Keys
 Policy Creation
 ************************************************************
 
-.. autoclass:: pycloudproof.Policy
+.. autoclass:: cloudproof_py.Policy
   :members:
   :inherited-members:
   :member-order: bysource
   :undoc-members:
 
-.. autoclass:: pycloudproof.Attribute
+.. autoclass:: cloudproof_py.Attribute
   :members:
   :inherited-members:
   :member-order: bysource
   :undoc-members:
 
-.. autoclass:: pycloudproof.PolicyAxis
+.. autoclass:: cloudproof_py.PolicyAxis
   :members:
   :inherited-members:
   :member-order: bysource
