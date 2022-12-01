@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Optional
-from cosmian_findex import IndexedValue, Label, MasterKey, PyFindex
+from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
 class IFindex(metaclass=ABCMeta):
     def __init__(self) -> None:
-        self.findex = PyFindex(
+        self.findex = InternalFindex(
             self.fetch_entry_table,
             self.fetch_chain_table,
             self.upsert_entry_table,
@@ -111,8 +111,8 @@ class IFindex(metaclass=ABCMeta):
         - remove `removed_chain_table_uids` from the Index Chain Table
         - add `new_encrypted_chain_table_items` to the Index Chain Table
 
-        The order of these operation is not important but have some
-        implications. This implementation keep the database small but prevent
+        The order of these operations is not important but have some
+        implications. This implementation keeps the database small but prevents
         using the index during the `update_lines`.
 
         Override this method if you want another implementation, e.g. :

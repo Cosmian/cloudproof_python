@@ -1,17 +1,5 @@
-Welcome to CloudProof_Py's documentation!
+Welcome to CloudProof Python's documentation!
 =========================================
 
-CoverCrypt
------------------
-
 .. toctree::
-   :maxdepth: 2
-
-   covercrypt
-
-Findex
------------------
-.. toctree::
-   :maxdepth: 2
-
-   findex
+   :maxdepth: 4

@@ -1,21 +1,24 @@
 # -*- coding: utf-8 -*-
+# Copy py interface files from PyO3 libs inside our projects
+
 import pkgutil
 
 if __name__ == "__main__":
     SRC_DIR = "src/cloudproof_py"
-    PKGs = ["cosmian_cover_crypt", "cosmian_findex"]
+    PKGs_dir = {
+        "cosmian_cover_crypt": f"{SRC_DIR}/cover_crypt",
+        "cosmian_findex": f"{SRC_DIR}/findex",
+    }
 
     # Marker file for PEP 561
     with open(f"{SRC_DIR}/py.typed", "w") as f:
         pass
-    with open(f"{SRC_DIR}/__init__.pyi", "w") as f:
-        pass
 
-    for pkg_name in PKGs:
+    for pkg_name, dest_dir in PKGs_dir.items():
         try:
             data = pkgutil.get_data(pkg_name, "__init__.pyi")
             if data:
-                with open(f"{SRC_DIR}/__init__.pyi", "a") as f:
+                with open(f"{dest_dir}/__init__.pyi", "w") as f:
                     f.write(data.decode("utf-8"))
         except FileNotFoundError:
             print(f"WARNING: No typing information found for {pkg_name}")

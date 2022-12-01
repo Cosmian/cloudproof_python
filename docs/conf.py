@@ -14,15 +14,10 @@ author = "Cosmian Tech"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = [
-    # "sphinx.ext.autodoc",
-    "sphinx_rtd_theme",
-    "sphinx.ext.napoleon",
-]
-extensions.append("autoapi.extension")
-
+extensions = ["sphinx_rtd_theme", "sphinx.ext.napoleon", "autoapi.extension"]
 autoapi_type = "python"
 autoapi_dirs = ["../src"]
+# Use py interface files in priority
 autoapi_file_patterns = ["*.pyi", "*.py"]
 
 templates_path = ["_templates"]
