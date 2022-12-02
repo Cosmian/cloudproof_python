@@ -4,7 +4,7 @@
 
 ```sh
 pip install -r requirements.txt
-scripts/build.sh
+scripts/build.sh [-i] [-t]
 ```
 
 ## Build docs

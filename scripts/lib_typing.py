@@ -20,5 +20,7 @@ if __name__ == "__main__":
             if data:
                 with open(f"{dest_dir}/__init__.pyi", "w") as f:
                     f.write(data.decode("utf-8"))
+            else:
+                raise FileNotFoundError
         except FileNotFoundError:
             print(f"WARNING: No typing information found for {pkg_name}")

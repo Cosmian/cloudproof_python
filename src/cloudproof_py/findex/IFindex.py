@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
-class IFindex(metaclass=ABCMeta):
+class FindexTrait(metaclass=ABCMeta):
     def __init__(self) -> None:
         self.findex = InternalFindex(
             self.fetch_entry_table,

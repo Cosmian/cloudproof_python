@@ -1,2 +1,2 @@
-/tmp/cover_crypt-8.0.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-/tmp/findex-0.10.1-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+cover_crypt>=8.0.0
+findex>=0.11.0
