@@ -18,7 +18,7 @@ extensions = ["sphinx_rtd_theme", "sphinx.ext.napoleon", "autoapi.extension"]
 autoapi_type = "python"
 autoapi_dirs = ["../src"]
 # Use py interface files in priority
-autoapi_file_patterns = ["*.pyi", "*.py"]
+autoapi_file_patterns = ["*.docpy", "*.py"]
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]

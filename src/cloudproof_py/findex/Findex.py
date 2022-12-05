@@ -194,7 +194,7 @@ class FindexTrait(metaclass=ABCMeta):
         new_master_key: MasterKey,
         new_label: Label,
     ) -> None:
-        """Performs compacting on the entry and chain tables
+        """Performs compacting on the entry and chain tables.
 
         Args:
             num_reindexing_before_full_set (int): number of compacting to do before
