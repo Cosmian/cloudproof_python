@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
@@ -10,7 +10,7 @@ class FindexTrait(metaclass=ABCMeta):
             self.fetch_entry_table,
             self.fetch_chain_table,
             self.upsert_entry_table,
-            self.upsert_chain_table,
+            self.insert_chain_table,
             self.update_lines,
             self.list_removed_locations,
             self.progress_callback,
@@ -41,15 +41,28 @@ class FindexTrait(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def upsert_entry_table(self, entry_items: Dict[bytes, bytes]) -> None:
-        """Insert new key-value pairs in the entry table
+    def upsert_entry_table(
+        self, entry_updates: Dict[bytes, Tuple[bytes, bytes]]
+    ) -> Dict[bytes, bytes]:
+        """Update key-value pairs in the entry table
 
         Args:
-            entry_items (Dict[bytes, bytes])
+            entry_updates (Dict[bytes, Tuple[bytes, bytes]]): uid -> (old_value, new_value)
+
+        Returns:
+            Dict[bytes, bytes]: entries that failed update (uid -> current value)
         """
 
     @abstractmethod
-    def upsert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
+    def insert_entry_table(self, entries_items: Dict[bytes, bytes]) -> None:
+        """Insert new key-value pairs in the entry table
+
+        Args:
+            entries_items (Dict[bytes, bytes])
+        """
+
+    @abstractmethod
+    def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
         """Insert new key-value pairs in the chain table
 
         Args:
@@ -129,13 +142,13 @@ class FindexTrait(metaclass=ABCMeta):
         """
 
         self.remove_entry_table()
-        self.upsert_entry_table(new_encrypted_entry_table_items)
+        self.insert_entry_table(new_encrypted_entry_table_items)
         self.remove_chain_table(removed_chain_table_uids)
-        self.upsert_chain_table(new_encrypted_chain_table_items)
+        self.insert_chain_table(new_encrypted_chain_table_items)
 
     def upsert(
         self,
-        dict_indexed_values: Dict[str, List[str]],
+        dict_indexed_values: Dict[IndexedValue, List[str]],
         master_key: MasterKey,
         label: Label,
     ) -> None:
@@ -147,21 +160,6 @@ class FindexTrait(metaclass=ABCMeta):
             label (Label): label used to allow versioning
         """
         self.findex.upsert_wrapper(dict_indexed_values, master_key, label)
-
-    def graph_upsert(
-        self,
-        dict_indexed_values: Dict[str, List[str]],
-        master_key: MasterKey,
-        label: Label,
-    ) -> None:
-        """Build the graph of a `KeyWord` and upsert it.
-
-        Args:
-            dict_indexed_values (Dict[bytes, List[bytes]]):  map of `IndexedValue` to `Keyword`
-            master_key (MasterKey): the user master key
-            label (Label): label used to allow versioning
-        """
-        self.findex.graph_upsert_wrapper(dict_indexed_values, master_key, label)
 
     def search(
         self,

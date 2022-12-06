@@ -25,4 +25,4 @@ python3 -m build
 # Optional: automatic install
 [ $install -gt 0 ] && pip install --force-reinstall dist/cloudproof_py*.whl
 # Optional: run tests
-[ $test -gt 0 ] && python3 tests/test*.py
+[ $test -gt 0 ] && python3 -m unittest tests/test*.py
