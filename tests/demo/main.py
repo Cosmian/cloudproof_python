@@ -1,22 +1,38 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 from cloudproof_py.findex import Findex, IndexedValue, MasterKey, Label
-from cloudproof_py.findex.utils import generate_auto_completion
+from cloudproof_py.cover_crypt import (
+    Policy,
+    PolicyAxis,
+    CoverCrypt,
+    PublicKey,
+    UserSecretKey,
+)
 from typing import Dict, List, Optional, Tuple
-import unittest
+from random import random
+import json
+from random import randbytes
 
 
 def create_table(conn, create_table_sql):
     try:
-        conn.execute(create_table_sql)
+        c = conn.cursor()
+        c.execute(create_table_sql)
     except sqlite3.Error as e:
         print(e)
 
 
 sql_create_users_table = """CREATE TABLE IF NOT EXISTS users (
                                             id BLOB PRIMARY KEY,
-                                            firstName text NOT NULL,
-                                            lastName text NOT NULL
+                                            firstName BLOB NOT NULL,
+                                            lastName BLOB NOT NULL,
+                                            email BLOB NOT NULL,
+                                            phone BLOB NOT NULL,
+                                            country BLOB NOT NULL,
+                                            region BLOB NOT NULL,
+                                            employeeNumber BLOB NOT NULL,
+                                            security BLOB NOT NULL
+
                                         );"""
 
 
@@ -31,7 +47,73 @@ sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
                                         );"""
 
 
-class SQLiteBackend(Findex.FindexTrait):
+class CCEncrypt:
+    country_list = set(["France", "Spain", "Germany"])
+    department_fields = {
+        "firstName": "MKG",
+        "lastName": "MKG",
+        "phone": "HR",
+        "email": "HR",
+        "country": "HR",
+        "region": "HR",
+        "employeeNumber": "HR",
+        "security": "HR",
+    }
+
+    def __init__(
+        self,
+        CoverCryptInstance: CoverCrypt,
+        policy: Policy,
+        public_key: PublicKey,
+        user_key: UserSecretKey,
+    ):
+        self.CoverCryptInstance = CoverCryptInstance
+        self.public_key = public_key
+        self.policy = policy
+        self.user_key = user_key
+
+    def encrypt_user(self, user: Dict[str, str]) -> List[bytes]:
+        res = []
+        if not user["country"] in CCEncrypt.country_list:
+            raise ValueError(
+                f"The user country: {user['country']} is not specified in the Policy."
+            )
+
+        for field_name, value in user.items():
+            if field_name not in CCEncrypt.department_fields:
+                raise ValueError(
+                    f"The user field: {field_name} does not belong to any Attribute."
+                )
+            res.append(
+                self.CoverCryptInstance.encrypt(
+                    policy,
+                    f"""Country::{user['country']} &&
+                    Department::{CCEncrypt.department_fields[field_name]}""",
+                    self.public_key,
+                    value.encode("utf-8"),
+                )
+            )
+
+        return res
+
+    def decrypt_user(self, user: List[bytes]) -> Dict[str, str]:
+        res = {}
+
+        if len(CCEncrypt.department_fields) != len(user):
+            raise ValueError("Cannot decrypt user: wrong number of fields")
+
+        for i, field_name in enumerate(CCEncrypt.department_fields):
+            try:
+                res[field_name] = self.CoverCryptInstance.decrypt(
+                    self.user_key, user[i]
+                )
+            except Exception:
+                res[field_name] = "Unauthorized"
+
+        return res
+
+
+class SQLiteClient(Findex.FindexTrait):
     # Start implementing Findex methods
 
     def fetch_entry_table(
@@ -93,18 +175,22 @@ class SQLiteBackend(Findex.FindexTrait):
         """
         rejected_lines: Dict[bytes, bytes] = {}
         for uid, (old_val, new_val) in entry_updates.items():
-            cursor = self.conn.execute(
-                """INSERT INTO entry_table(uid,value) VALUES(?,?)
-                    ON CONFLICT (uid) DO UPDATE SET value=? WHERE value=?
-                """,
-                (uid, new_val, new_val, old_val),
-            )
-            # Insertion has failed
-            if cursor.rowcount < 1:
+            if random() < 0.5:
                 cursor = self.conn.execute(
-                    "SELECT value from entry_table WHERE uid=?", (uid,)
+                    """INSERT INTO entry_table(uid,value) VALUES(?,?)
+                        ON CONFLICT (uid) DO UPDATE SET value=? WHERE value=?
+                    """,
+                    (uid, new_val, new_val, old_val),
                 )
-                rejected_lines[uid] = cursor.fetchone()[0]
+                # Insertion has failed
+                if cursor.rowcount < 1:
+                    cursor = self.conn.execute(
+                        "SELECT value from entry_table WHERE uid=?", (uid,)
+                    )
+                    rejected_lines[uid] = cursor.fetchone()[0]
+            else:
+                rejected_lines[uid] = new_val
+
         return rejected_lines
 
     def insert_entry_table(self, entries_items: Dict[bytes, bytes]) -> None:
@@ -178,10 +264,12 @@ class SQLiteBackend(Findex.FindexTrait):
         """
         return True
 
-    # End findex trait implementation
+    # End findex implementation
 
-    def __init__(self) -> None:
+    def __init__(self, cc_encrypt: CCEncrypt) -> None:
         super().__init__()
+
+        self.cc_encrypt = cc_encrypt
 
         # Create database
         self.conn = sqlite3.connect(":memory:")
@@ -189,11 +277,34 @@ class SQLiteBackend(Findex.FindexTrait):
         create_table(self.conn, sql_create_entry_table)
         create_table(self.conn, sql_create_chain_table)
 
-    def insert_users(self, new_users: Dict[bytes, List[str]]) -> None:
-        flat_entries = [(id, *val) for id, val in new_users.items()]
-        sql_insert_user = """INSERT INTO users(id,firstName,lastName) VALUES(?,?,?)"""
+    def insert_users(self, new_users: List[Dict[str, str]], uid_size=32) -> List[bytes]:
+        db_uids = [randbytes(uid_size) for i in range(len(new_users))]
+
+        flat_entries = []
+        for i in range(len(new_users)):
+            flat_entries.append(
+                (db_uids[i], *self.cc_encrypt.encrypt_user(new_users[i]))
+            )
+
+        sql_insert_user = """INSERT INTO
+            users(id,firstName,lastName, email, phone, country, region, employeeNumber, security)
+            VALUES(?,?,?,?,?,?,?,?,?)"""
         cur = self.conn.cursor()
         cur.executemany(sql_insert_user, flat_entries)
+
+        return db_uids
+
+    def fetch_users(self, users_id: List[bytes]):
+        str_uids = ",".join("?" * len(users_id))
+        cur = self.conn.execute(
+            f"SELECT * FROM users WHERE id IN ({str_uids})",
+            users_id,
+        )
+        values = cur.fetchall()
+        res = []
+        for user in values:
+            res.append(self.cc_encrypt.decrypt_user(user[1:]))
+        return res
 
     def remove_users(self, users_id: List[bytes]) -> None:
         sql_rm_user = """DELETE FROM users WHERE id = ?"""
@@ -204,75 +315,40 @@ class SQLiteBackend(Findex.FindexTrait):
         return self.conn.execute(f"SELECT COUNT(*) from {db_table};").fetchone()[0]
 
 
-class TestFindexSQLite(unittest.TestCase):
-    def setUp(self) -> None:
-        # Init Findex objects
-        self.db_server = SQLiteBackend()
-        self.mk = MasterKey.random()
-        self.label = Label.random()
-
-        self.users = {
-            b"1": ["Martin", "Sheperd"],
-            b"2": ["Martial", "Wilkins"],
-            b"3": ["John", "Sheperd"],
-        }
-        self.db_server.insert_users(self.users)
-
-    def test_sqlite_upsert_graph(self) -> None:
-        # Simple insertion
-
-        indexed_values_and_keywords = {
-            IndexedValue.from_location(key): value for key, value in self.users.items()
-        }
-        self.db_server.upsert(indexed_values_and_keywords, self.mk, self.label)
-
-        self.assertEqual(
-            len(self.db_server.search(["Sheperd"], self.mk, self.label)), 2
-        )
-        self.assertEqual(self.db_server.get_num_lines("entry_table"), 5)
-        self.assertEqual(self.db_server.get_num_lines("chain_table"), 5)
-
-        # Generate and upsert graph
-
-        keywords_list = [item for sublist in self.users.values() for item in sublist]
-        graph = generate_auto_completion(keywords_list)
-        self.db_server.upsert(graph, self.mk, self.label)
-
-        self.assertEqual(self.db_server.get_num_lines("entry_table"), 18)
-        self.assertEqual(self.db_server.get_num_lines("chain_table"), 18)
-
-        res = self.db_server.search(["Mar"], self.mk, self.label)
-        # 2 names starting with Mar
-        self.assertEqual(len(res), 2)
-
-        res = self.db_server.search(["Mar", "She"], self.mk, self.label)
-        # all names starting with Mar or She
-        self.assertEqual(len(res), 3)
-
-    def test_sqlite_compact(self) -> None:
-        indexed_values_and_keywords = {
-            IndexedValue.from_location(key): value for key, value in self.users.items()
-        }
-        self.db_server.upsert(indexed_values_and_keywords, self.mk, self.label)
-
-        # Remove one line in the database before compacting
-        self.db_server.remove_users([b"1"])
-        new_label = Label.random()
-        new_mk = MasterKey.random()
-        self.db_server.compact(1, self.mk, new_mk, new_label)
-
-        # only one result left for `Sheperd`
-        res = self.db_server.search(["Sheperd"], new_mk, new_label)
-        self.assertEqual(len(res), 1)
-
-        # searching with old label will fail
-        res = self.db_server.search(["Sheperd"], new_mk, self.label)
-        self.assertEqual(len(res), 0)
-
-        # searching with old key will fail
-        res = self.db_server.search(["Sheperd"], self.mk, new_label)
-        self.assertEqual(len(res), 0)
-
-
 if __name__ == "__main__":
-    unittest.main()
+    # Admin part
+    policy = Policy()
+    policy.add_axis(
+        PolicyAxis(
+            "Country",
+            ["France", "Spain", "Germany"],
+            hierarchical=False,
+        )
+    )
+    policy.add_axis(
+        PolicyAxis(
+            "Department", ["MKG", "HR"], hierarchical=True
+        )  # HR can access mkg data about users
+    )
+
+    CoverCryptInstance = CoverCrypt()
+    cc_master_key, cc_public_key = CoverCryptInstance.generate_master_keys(policy)
+
+    cc_userkey_fr_hr = CoverCryptInstance.generate_user_secret_key(
+        cc_master_key, "Country::France && Department::HR", policy
+    )
+
+    # User part
+    cc_encrypt = CCEncrypt(CoverCryptInstance, policy, cc_public_key, cc_userkey_fr_hr)
+
+    db_server = SQLiteClient(cc_encrypt)
+
+    with open("./data.json", "r", encoding="utf-8") as f:
+        users = json.load(f)
+
+    db_uids = db_server.insert_users(users)
+
+    print(db_server.fetch_users(db_uids))
+
+    findex_master_key = MasterKey.random()
+    label = Label.random()
