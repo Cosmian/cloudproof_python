@@ -97,16 +97,15 @@ class CCEncrypt:
         return res
 
     def decrypt_user(self, user: List[bytes]) -> Dict[str, str]:
-        res = {}
+        res: Dict[str, str] = {}
 
         if len(CCEncrypt.department_fields) != len(user):
             raise ValueError("Cannot decrypt user: wrong number of fields")
 
         for i, field_name in enumerate(CCEncrypt.department_fields):
             try:
-                res[field_name] = self.CoverCryptInstance.decrypt(
-                    self.user_key, user[i]
-                )
+                plain_data, _ = self.CoverCryptInstance.decrypt(self.user_key, user[i])
+                res[field_name] = plain_data.decode("utf-8")
             except Exception:
                 res[field_name] = "Unauthorized"
 
@@ -350,5 +349,24 @@ if __name__ == "__main__":
 
     print(db_server.fetch_users(db_uids))
 
-    findex_master_key = MasterKey.random()
+    # Findex
+
+    findex_key = MasterKey.random()
     label = Label.random()
+
+    indexed_values_and_keywords = {
+        IndexedValue.from_location(user_id): list(user.values())
+        for user_id, user in zip(db_uids, users)
+    }
+    db_server.upsert(indexed_values_and_keywords, findex_key, label)
+
+    found_users = db_server.search(["Felix"], findex_key, label)
+    users_id = []
+    for user in found_users:
+        if user_id := user.get_location():
+            users_id.append(user_id)
+
+    print(
+        "Result for search: 'Felix' with access `Country::France` and `Department::HR`"
+    )
+    print(db_server.fetch_users(users_id))
