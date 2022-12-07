@@ -203,48 +203,74 @@ class SQLiteBackend(Findex.FindexTrait):
         return self.conn.execute(f"SELECT COUNT(*) from {db_table};").fetchone()[0]
 
 
-class TestFindex(unittest.TestCase):
-    def test_sqlite(self) -> None:
+class TestFindexSQLite(unittest.TestCase):
+    def setUp(self) -> None:
         # Init Findex objects
+        self.db_server = SQLiteBackend()
+        self.mk = MasterKey.random()
+        self.label = Label.random()
 
-        db_server = SQLiteBackend()
-        mk = MasterKey.random()
-        label = Label.random()
-
-        users = {
+        self.users = {
             b"1": ["Martin", "Sheperd"],
             b"2": ["Martial", "Wilkins"],
             b"3": ["John", "Sheperd"],
         }
-        db_server.insert_users(users)
+        self.db_server.insert_users(self.users)
 
+    def test_sqlite_upsert_graph(self) -> None:
         # Simple insertion
 
         indexed_values_and_keywords = {
-            IndexedValue.from_location(key): value for key, value in users.items()
+            IndexedValue.from_location(key): value for key, value in self.users.items()
         }
-        db_server.upsert(indexed_values_and_keywords, mk, label)
+        self.db_server.upsert(indexed_values_and_keywords, self.mk, self.label)
 
-        self.assertEqual(len(db_server.search(["Sheperd"], mk, label)), 2)
-        self.assertEqual(db_server.get_num_lines("entry_table"), 5)
-        self.assertEqual(db_server.get_num_lines("chain_table"), 5)
+        self.assertEqual(
+            len(self.db_server.search(["Sheperd"], self.mk, self.label)), 2
+        )
+        self.assertEqual(self.db_server.get_num_lines("entry_table"), 5)
+        self.assertEqual(self.db_server.get_num_lines("chain_table"), 5)
 
         # Generate and upsert graph
 
-        keywords_list = [item for sublist in users.values() for item in sublist]
+        keywords_list = [item for sublist in self.users.values() for item in sublist]
         graph = generate_auto_completion(keywords_list)
-        db_server.upsert(graph, mk, label)
+        self.db_server.upsert(graph, self.mk, self.label)
 
-        self.assertEqual(db_server.get_num_lines("entry_table"), 18)
-        self.assertEqual(db_server.get_num_lines("chain_table"), 18)
+        self.assertEqual(self.db_server.get_num_lines("entry_table"), 18)
+        self.assertEqual(self.db_server.get_num_lines("chain_table"), 18)
 
-        res = db_server.search(["Mar"], mk, label)
+        res = self.db_server.search(["Mar"], self.mk, self.label)
         # 2 names starting with Mar
         self.assertEqual(len(res), 2)
 
-        res = db_server.search(["Mar", "She"], mk, label)
+        res = self.db_server.search(["Mar", "She"], self.mk, self.label)
         # all names starting with Mar or She
         self.assertEqual(len(res), 3)
+
+    def test_sqlite_compact(self) -> None:
+        indexed_values_and_keywords = {
+            IndexedValue.from_location(key): value for key, value in self.users.items()
+        }
+        self.db_server.upsert(indexed_values_and_keywords, self.mk, self.label)
+
+        # Remove one line in the database before compacting
+        self.db_server.remove_users([b"1"])
+        new_label = Label.random()
+        new_mk = MasterKey.random()
+        self.db_server.compact(1, self.mk, new_mk, new_label)
+
+        # only one result left for `Sheperd`
+        res = self.db_server.search(["Sheperd"], new_mk, new_label)
+        self.assertEqual(len(res), 1)
+
+        # searching with old label will fail
+        res = self.db_server.search(["Sheperd"], new_mk, self.label)
+        self.assertEqual(len(res), 0)
+
+        # searching with old key will fail
+        res = self.db_server.search(["Sheperd"], self.mk, new_label)
+        self.assertEqual(len(res), 0)
 
 
 if __name__ == "__main__":
