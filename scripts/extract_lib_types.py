@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copy py interface files from PyO3 libs inside our projects
+# Theses files are used by sphinx auto-api to generate the docs of our PyO3 libs
 
 import pkgutil
 

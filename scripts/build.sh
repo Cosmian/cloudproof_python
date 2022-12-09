@@ -19,7 +19,7 @@ while getopts "hit" opt; do
 done
 
 # Get py interfaces from pyo3 libs
-python3 scripts/lib_typing.py
+python3 scripts/extract_lib_types.py
 # Build package
 python3 -m build
 # Optional: automatic install

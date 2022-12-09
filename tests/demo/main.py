@@ -7,6 +7,7 @@ from cloudproof_py.cover_crypt import (
     CoverCrypt,
     PublicKey,
     UserSecretKey,
+    Attribute,
 )
 from typing import Dict, List, Optional, Tuple
 from random import random
@@ -47,69 +48,138 @@ sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
                                         );"""
 
 
-class CCEncrypt:
-    country_list = set(["France", "Spain", "Germany"])
-    department_fields = {
-        "firstName": "MKG",
-        "lastName": "MKG",
-        "phone": "HR",
-        "email": "HR",
-        "country": "HR",
-        "region": "HR",
-        "employeeNumber": "HR",
-        "security": "HR",
-    }
-
+class CloudProofField:
     def __init__(
         self,
+        field_name: str,
+        col_attributes: List[Attribute],
+        row_policy_axis: Optional[PolicyAxis] = None,
+        is_searchable: bool = False,
+    ):
+
+        self.name = field_name
+        self.col_attributes = col_attributes
+        self.row_policy_axis = row_policy_axis
+        self.is_searchable = is_searchable
+
+    def __repr__(self) -> str:
+        return f"""CloudProofField |{self.name}|\
+(C{len(self.col_attributes)}\
+{f'|R' if self.row_policy_axis else ''}\
+{'|Fx' if self.is_searchable else ''})"""
+
+
+class CloudProofEntry:
+    def __init__(
+        self,
+        scheme: List[CloudProofField],
+        CoverCryptInstance: CoverCrypt,
+        policy: Policy,
+        public_key: PublicKey,
+        user_key: UserSecretKey,
+    ) -> None:
+
+        self.CoverCryptInstance = CoverCryptInstance
+        self.policy = policy
+        self.public_key = public_key
+        self.user_key = user_key
+        self.values: Dict[str, str] = {}
+
+        # used during decryption
+        self.ordered_field_names = [field.name for field in scheme]
+
+        self.fields_policy_axis = {}
+        self.scheme = {}
+        for field in scheme:
+            self.scheme[field.name] = field
+            if field.row_policy_axis:
+                self.fields_policy_axis[field.name] = field.row_policy_axis
+
+    def set_values(self, values: Dict[str, str]):
+        for field_name, val in values.items():
+            if field_name not in self.scheme:
+                raise ValueError(f"{field_name} is an unknown field.")
+            self.values[field_name] = val
+        return self
+
+    def get_keywords(self) -> List[str]:
+        res = []
+        for field_name, field_val in self.values.items():
+            if self.scheme[field_name].is_searchable:
+                res.append(field_val)
+        return res
+
+    def encrypt_values(self) -> List[bytes]:
+        res = []
+
+        row_attributes = "|| ".join(
+            [
+                f"{policy_axis}::{self.values[field_name]}"
+                for field_name, policy_axis in self.fields_policy_axis.items()
+            ]
+        )
+
+        for field in self.scheme.values():
+            col_attributes = "|| ".join(
+                [attr.to_string() for attr in field.col_attributes]
+            )
+
+            res.append(
+                self.CoverCryptInstance.encrypt(
+                    self.policy,
+                    f"({row_attributes}) && ({col_attributes})",
+                    self.public_key,
+                    self.values[field.name].encode("utf-8"),
+                )
+            )
+
+        return res
+
+    def decrypt_set_values(self, encrypted_data: List[bytes]):
+        if len(encrypted_data) != len(self.ordered_field_names):
+            raise ValueError("Cannot decrypt data: wrong number of fields")
+
+        for i, field_name in enumerate(self.ordered_field_names):
+            try:
+                plain_data, _ = self.CoverCryptInstance.decrypt(
+                    self.user_key, encrypted_data[i]
+                )
+                self.values[field_name] = plain_data.decode("utf-8")
+            except Exception:
+                self.values[field_name] = "Unauthorized"
+
+        return self
+
+    def __repr__(self) -> str:
+        if len(self.values) > 0:
+            return self.values.__repr__()
+        return self.scheme.__repr__()
+
+
+class CloudProofEntryGenerator:
+    def __init__(
+        self,
+        fields_scheme: List[CloudProofField],
         CoverCryptInstance: CoverCrypt,
         policy: Policy,
         public_key: PublicKey,
         user_key: UserSecretKey,
     ):
+
+        self.fields_scheme = fields_scheme
         self.CoverCryptInstance = CoverCryptInstance
-        self.public_key = public_key
         self.policy = policy
+        self.public_key = public_key
         self.user_key = user_key
 
-    def encrypt_user(self, user: Dict[str, str]) -> List[bytes]:
-        res = []
-        if not user["country"] in CCEncrypt.country_list:
-            raise ValueError(
-                f"The user country: {user['country']} is not specified in the Policy."
-            )
-
-        for field_name, value in user.items():
-            if field_name not in CCEncrypt.department_fields:
-                raise ValueError(
-                    f"The user field: {field_name} does not belong to any Attribute."
-                )
-            res.append(
-                self.CoverCryptInstance.encrypt(
-                    policy,
-                    f"""Country::{user['country']} &&
-                    Department::{CCEncrypt.department_fields[field_name]}""",
-                    self.public_key,
-                    value.encode("utf-8"),
-                )
-            )
-
-        return res
-
-    def decrypt_user(self, user: List[bytes]) -> Dict[str, str]:
-        res: Dict[str, str] = {}
-
-        if len(CCEncrypt.department_fields) != len(user):
-            raise ValueError("Cannot decrypt user: wrong number of fields")
-
-        for i, field_name in enumerate(CCEncrypt.department_fields):
-            try:
-                plain_data, _ = self.CoverCryptInstance.decrypt(self.user_key, user[i])
-                res[field_name] = plain_data.decode("utf-8")
-            except Exception:
-                res[field_name] = "Unauthorized"
-
-        return res
+    def new_entry(self):
+        return CloudProofEntry(
+            self.fields_scheme,
+            self.CoverCryptInstance,
+            self.policy,
+            self.public_key,
+            self.user_key,
+        )
 
 
 class SQLiteClient(Findex.FindexTrait):
@@ -265,10 +335,8 @@ class SQLiteClient(Findex.FindexTrait):
 
     # End findex implementation
 
-    def __init__(self, cc_encrypt: CCEncrypt) -> None:
+    def __init__(self) -> None:
         super().__init__()
-
-        self.cc_encrypt = cc_encrypt
 
         # Create database
         self.conn = sqlite3.connect(":memory:")
@@ -276,14 +344,14 @@ class SQLiteClient(Findex.FindexTrait):
         create_table(self.conn, sql_create_entry_table)
         create_table(self.conn, sql_create_chain_table)
 
-    def insert_users(self, new_users: List[Dict[str, str]], uid_size=32) -> List[bytes]:
+    def insert_users(
+        self, new_users: List[CloudProofEntry], uid_size=32
+    ) -> List[bytes]:
         db_uids = [randbytes(uid_size) for i in range(len(new_users))]
 
         flat_entries = []
         for i in range(len(new_users)):
-            flat_entries.append(
-                (db_uids[i], *self.cc_encrypt.encrypt_user(new_users[i]))
-            )
+            flat_entries.append((db_uids[i], *new_users[i].encrypt_values()))
 
         sql_insert_user = """INSERT INTO
             users(id,firstName,lastName, email, phone, country, region, employeeNumber, security)
@@ -293,7 +361,9 @@ class SQLiteClient(Findex.FindexTrait):
 
         return db_uids
 
-    def fetch_users(self, users_id: List[bytes]):
+    def fetch_users(
+        self, users_id: List[bytes], entry_generator: CloudProofEntryGenerator
+    ) -> List[CloudProofEntry]:
         str_uids = ",".join("?" * len(users_id))
         cur = self.conn.execute(
             f"SELECT * FROM users WHERE id IN ({str_uids})",
@@ -302,7 +372,7 @@ class SQLiteClient(Findex.FindexTrait):
         values = cur.fetchall()
         res = []
         for user in values:
-            res.append(self.cc_encrypt.decrypt_user(user[1:]))
+            res.append(entry_generator.new_entry().decrypt_set_values(user[1:]))
         return res
 
     def remove_users(self, users_id: List[bytes]) -> None:
@@ -334,20 +404,70 @@ if __name__ == "__main__":
     cc_master_key, cc_public_key = CoverCryptInstance.generate_master_keys(policy)
 
     cc_userkey_fr_hr = CoverCryptInstance.generate_user_secret_key(
-        cc_master_key, "Country::France && Department::HR", policy
+        cc_master_key, "Country::France && Department::MKG", policy
+    )
+
+    # Declare `data to encrypt` schema
+    UserGenerator = CloudProofEntryGenerator(
+        [
+            CloudProofField(
+                field_name="firstName",
+                col_attributes=[Attribute("Department", "MKG")],
+                is_searchable=True,
+            ),
+            CloudProofField(
+                field_name="lastName",
+                col_attributes=[Attribute("Department", "MKG")],
+                is_searchable=True,
+            ),
+            CloudProofField(
+                field_name="phone",
+                col_attributes=[Attribute("Department", "HR")],
+                is_searchable=False,
+            ),
+            CloudProofField(
+                field_name="email",
+                col_attributes=[Attribute("Department", "HR")],
+                is_searchable=False,
+            ),
+            CloudProofField(
+                field_name="country",
+                col_attributes=[Attribute("Department", "HR")],
+                row_policy_axis="Country",
+                is_searchable=True,
+            ),
+            CloudProofField(
+                field_name="region",
+                col_attributes=[Attribute("Department", "HR")],
+                is_searchable=True,
+            ),
+            CloudProofField(
+                field_name="employeeNumber",
+                col_attributes=[Attribute("Department", "HR")],
+                is_searchable=False,
+            ),
+            CloudProofField(
+                field_name="security",
+                col_attributes=[Attribute("Department", "HR")],
+                is_searchable=False,
+            ),
+        ],
+        CoverCryptInstance,
+        policy,
+        cc_public_key,
+        cc_userkey_fr_hr,
     )
 
     # User part
-    cc_encrypt = CCEncrypt(CoverCryptInstance, policy, cc_public_key, cc_userkey_fr_hr)
-
-    db_server = SQLiteClient(cc_encrypt)
 
     with open("./data.json", "r", encoding="utf-8") as f:
-        users = json.load(f)
+        data = json.load(f)
+        users = [UserGenerator.new_entry().set_values(user) for user in data]
 
+    db_server = SQLiteClient()
     db_uids = db_server.insert_users(users)
 
-    print(db_server.fetch_users(db_uids))
+    res = db_server.fetch_users(db_uids, UserGenerator)
 
     # Findex
 
@@ -355,18 +475,18 @@ if __name__ == "__main__":
     label = Label.random()
 
     indexed_values_and_keywords = {
-        IndexedValue.from_location(user_id): list(user.values())
+        IndexedValue.from_location(user_id): user.get_keywords()
         for user_id, user in zip(db_uids, users)
     }
     db_server.upsert(indexed_values_and_keywords, findex_key, label)
 
-    found_users = db_server.search(["Felix"], findex_key, label)
+    found_users = db_server.search(["Martin"], findex_key, label)
     users_id = []
     for user in found_users:
         if user_id := user.get_location():
             users_id.append(user_id)
 
     print(
-        "Result for search: 'Felix' with access `Country::France` and `Department::HR`"
+        "Result for search: 'Martin' with access `Country::France` and `Department::MKG`:"
     )
-    print(db_server.fetch_users(users_id))
+    print(db_server.fetch_users(users_id, UserGenerator))
