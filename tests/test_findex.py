@@ -226,9 +226,8 @@ class TestFindexSQLite(unittest.TestCase):
         }
         self.db_server.upsert(indexed_values_and_keywords, self.mk, self.label)
 
-        self.assertEqual(
-            len(self.db_server.search(["Sheperd"], self.mk, self.label)), 2
-        )
+        res = self.db_server.search(["Sheperd"], self.mk, self.label)
+        self.assertEqual(len(res["Sheperd"]), 2)
         self.assertEqual(self.db_server.get_num_lines("entry_table"), 5)
         self.assertEqual(self.db_server.get_num_lines("chain_table"), 5)
 
@@ -243,11 +242,12 @@ class TestFindexSQLite(unittest.TestCase):
 
         res = self.db_server.search(["Mar"], self.mk, self.label)
         # 2 names starting with Mar
-        self.assertEqual(len(res), 2)
+        self.assertEqual(len(res["Mar"]), 2)
 
         res = self.db_server.search(["Mar", "She"], self.mk, self.label)
         # all names starting with Mar or She
-        self.assertEqual(len(res), 3)
+        self.assertEqual(len(res["Mar"]), 2)
+        self.assertEqual(len(res["She"]), 2)
 
     def test_sqlite_compact(self) -> None:
         indexed_values_and_keywords = {
