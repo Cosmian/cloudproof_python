@@ -2,7 +2,6 @@
 from typing import List, Optional, Dict
 from cloudproof_py.cover_crypt import (
     Policy,
-    PolicyAxis,
     CoverCrypt,
     PublicKey,
     UserSecretKey,
@@ -11,6 +10,7 @@ from cloudproof_py.cover_crypt import (
 from cloudproof_py.findex import Findex, Label, MasterKey, IndexedValue
 import sqlite3
 from random import randbytes
+from copy import deepcopy
 
 
 class CloudProofKMS:
@@ -32,76 +32,97 @@ class CloudProofKMS:
         self.findex_label = findex_label
 
 
+class CloudProofValue:
+    def __init__(self):
+        self.has_decryption_failed: bool = False
+        self.data: Optional[str] = None
+
+    def set_data(self, val: str):
+        self.has_decryption_failed = False
+        self.data = val
+
+    def __repr__(self) -> str:
+        if self.has_decryption_failed:
+            return "Unauthorized"
+        if self.data:
+            return self.data
+        return ""
+
+
 class CloudProofField:
     def __init__(
         self,
         field_name: str,
         col_attributes: List[Attribute],
-        row_policy_axis: Optional[PolicyAxis] = None,
+        row_policy_axis: Optional[str] = None,
         is_searchable: bool = False,
     ):
 
         self.name = field_name
-        self.col_attributes = col_attributes
+        self.col_attributes = [attr.to_string() for attr in col_attributes]
         self.row_policy_axis = row_policy_axis
         self.is_searchable = is_searchable
+        self.value = CloudProofValue()
+
+    def get_value(self) -> str:
+        if self.value.has_decryption_failed or self.value.data is None:
+            raise ValueError("CloudProofField '{self.name}' has no value")
+        return self.value.data
+
+    def set_value(self, val: str) -> None:
+        self.value.set_data(val)
 
     def __repr__(self) -> str:
-        return f"""CloudProofField |{self.name}|\
-(C{len(self.col_attributes)}\
-{f'|R' if self.row_policy_axis else ''}\
-{'|Fx' if self.is_searchable else ''})"""
+        return f"""|{self.name}: {self.value}|"""
 
 
 class CloudProofEntry:
     def __init__(self, scheme: List[CloudProofField]) -> None:
-        self.values: Dict[str, str] = {}
+        # self.values: Dict[str, str] = {}
         self.db_uid: Optional[bytes] = None
 
         # used during decryption
         self.ordered_field_names = [field.name for field in scheme]
 
         self.fields_policy_axis = {}
-        self.scheme = {}
+        self.fields = {}
         for field in scheme:
-            self.scheme[field.name] = field
+            self.fields[field.name] = field
             if field.row_policy_axis:
                 self.fields_policy_axis[field.name] = field.row_policy_axis
 
     def set_values(self, values: Dict[str, str]):
         for field_name, val in values.items():
-            if field_name not in self.scheme:
+            if field_name not in self.fields:
                 raise ValueError(f"{field_name} is an unknown field.")
-            self.values[field_name] = val
+            self.fields[field_name].set_value(val)
         return self
 
     def get_keywords(self) -> List[str]:
         res = []
-        for field_name, field_val in self.values.items():
-            if self.scheme[field_name].is_searchable:
-                res.append(field_val)
+        for field in self.fields.values():
+            if field.is_searchable:
+                res.append(field.get_value())
         return res
 
     def encrypt_values(self, kms: CloudProofKMS) -> List[bytes]:
         res = []
         row_attributes = "|| ".join(
             [
-                f"{policy_axis}::{self.values[field_name]}"
+                f"{policy_axis}::{self.fields[field_name].get_value()}"
                 for field_name, policy_axis in self.fields_policy_axis.items()
             ]
         )
 
-        for field in self.scheme.values():
-            col_attributes = "|| ".join(
-                [attr.to_string() for attr in field.col_attributes]
-            )
+        for field in self.fields.values():
+            col_attributes = "|| ".join(field.col_attributes)
 
             res.append(
                 kms.cc_instance.encrypt(
                     kms.cc_policy,
                     f"({row_attributes}) && ({col_attributes})",
                     kms.cc_public_key,
-                    self.values[field.name].encode("utf-8"),
+                    self.fields[field.name].get_value().encode("utf-8"),
                 )
             )
 
@@ -116,9 +137,9 @@ class CloudProofEntry:
                 plain_data, _ = kms.cc_instance.decrypt(
                     kms.cc_user_key, encrypted_data[i]
                 )
-                self.values[field_name] = plain_data.decode("utf-8")
+                self.fields[field_name].set_value(plain_data.decode("utf-8"))
             except Exception:
-                self.values[field_name] = "Unauthorized"
+                self.fields[field_name].value.has_decryption_failed = True
 
         return self
 
@@ -126,9 +147,7 @@ class CloudProofEntry:
         self.db_uid = uid
 
     def __repr__(self) -> str:
-        if len(self.values) > 0:
-            return self.values.__repr__()
-        return self.scheme.__repr__()
+        return " ".join([field.__repr__() for field in self.fields.values()])
 
 
 class CloudProofEntryGenerator:
@@ -136,10 +155,9 @@ class CloudProofEntryGenerator:
         self.fields_scheme = fields_scheme
 
     def new_entry(self):
-        return CloudProofEntry(self.fields_scheme)
+        return CloudProofEntry(deepcopy(self.fields_scheme))
 
 
-# TODO: Extract sql statement out of this class
 class CloudProofDatabaseInterface:
     def __init__(
         self,
@@ -173,15 +191,14 @@ class CloudProofDatabaseInterface:
     def insert_users(
         self,
         new_users: List[CloudProofEntry],
-        kms: CloudProofKMS,
         uid_size=32,
     ) -> None:
         db_uids = [randbytes(uid_size) for i in range(len(new_users))]
 
         flat_entries = []
-        for i in range(len(new_users)):
-            new_users[i].set_db_uid(db_uids[i])
-            flat_entries.append((db_uids[i], *new_users[i].encrypt_values(self.kms)))
+        for i, new_user in enumerate(new_users):
+            new_user.set_db_uid(db_uids[i])
+            flat_entries.append((db_uids[i], *new_user.encrypt_values(self.kms)))
 
         # Insert users in DB
 
@@ -197,7 +214,9 @@ class CloudProofDatabaseInterface:
             for user_id, user in zip(db_uids, new_users)
         }
         self.findex_interface.upsert(
-            indexed_values_and_keywords, kms.findex_master_key, kms.findex_label
+            indexed_values_and_keywords,
+            self.kms.findex_master_key,
+            self.kms.findex_label,
         )
 
     def fetch_users(self, users_id: List[bytes]) -> List[CloudProofEntry]:
@@ -223,8 +242,15 @@ class CloudProofDatabaseInterface:
         found_users = self.findex_interface.search(
             keywords, self.kms.findex_master_key, self.kms.findex_label
         )
+        unique_users = set(
+            [
+                indexed_value
+                for sublist in found_users.values()
+                for indexed_value in sublist
+            ]
+        )
         user_ids = []
-        for user in found_users:
+        for user in unique_users:
             if user_id := user.get_location():
                 user_ids.append(user_id)
 

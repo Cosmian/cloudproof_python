@@ -37,8 +37,8 @@ if __name__ == "__main__":
     CoverCryptInstance = CoverCrypt()
     cc_master_key, cc_public_key = CoverCryptInstance.generate_master_keys(policy)
 
-    cc_userkey_fr_hr = CoverCryptInstance.generate_user_secret_key(
-        cc_master_key, "Country::France && Department::HR", policy
+    cc_userkey_fr_mkg = CoverCryptInstance.generate_user_secret_key(
+        cc_master_key, "Country::France && Department::MKG", policy
     )
 
     # Findex
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     label = Label.random()
 
     kms = CloudProofKMS(
-        CoverCryptInstance, policy, cc_public_key, cc_userkey_fr_hr, findex_key, label
+        CoverCryptInstance, policy, cc_public_key, cc_userkey_fr_mkg, findex_key, label
     )
 
     # Declare `data to encrypt` schema
@@ -106,6 +106,6 @@ if __name__ == "__main__":
     db_server = CloudProofDatabaseInterface(
         conn, FindexSQLite(conn), UserGenerator, kms
     )
-    db_server.insert_users(users, kms)
+    db_server.insert_users(users)
 
     print(db_server.search_users(["Martin"]))
