@@ -1,2 +1,2 @@
-cover_crypt>=8.0.0
-findex>=0.11.0
+cover_crypt>=8.0.1
+findex>=1.0.0

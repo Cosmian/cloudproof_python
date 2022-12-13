@@ -18,10 +18,11 @@ make html
 ## Demo
 
 > An interactive cli demo combining policy based encryption with searchable keywords
+>
 > Users from `./tests/demo/data.json` are encrypted using CoverCrypt and indexed via Findex
 
 - Run
 
 ```sh
-tests/run_demo.sh
+scripts/run_demo.sh
 ```

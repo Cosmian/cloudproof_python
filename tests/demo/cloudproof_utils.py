@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 from typing import List, Optional, Dict
+import sqlite3
+from random import randbytes
+from copy import deepcopy
+from termcolor import colored
+
 from cloudproof_py.cover_crypt import (
     Policy,
     CoverCrypt,
@@ -8,9 +13,6 @@ from cloudproof_py.cover_crypt import (
     Attribute,
 )
 from cloudproof_py.findex import Findex, Label, MasterKey, IndexedValue
-import sqlite3
-from random import randbytes
-from copy import deepcopy
 
 
 class CloudProofKMS:
@@ -43,7 +45,7 @@ class CloudProofValue:
 
     def __repr__(self) -> str:
         if self.has_decryption_failed:
-            return "Unauthorized"
+            return colored("Unauthorized", "red", attrs=["bold"])
         if self.data:
             return self.data
         return ""
@@ -73,7 +75,7 @@ class CloudProofField:
         self.value.set_data(val)
 
     def __repr__(self) -> str:
-        return f"""|{self.name}: {self.value}|"""
+        return f"""{self.name}: {self.value}"""
 
 
 class CloudProofEntry:
@@ -147,7 +149,7 @@ class CloudProofEntry:
         self.db_uid = uid
 
     def __repr__(self) -> str:
-        return " ".join([field.__repr__() for field in self.fields.values()])
+        return " | ".join([field.__repr__() for field in self.fields.values()])
 
 
 class CloudProofEntryGenerator:

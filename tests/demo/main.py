@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import json
+import sqlite3
+
 from findex_db import FindexSQLite
 from cloudproof_utils import (
     CloudProofEntryGenerator,
@@ -7,15 +10,13 @@ from cloudproof_utils import (
     CloudProofDatabaseInterface,
 )
 
-from cloudproof_py.findex import MasterKey, Label
+from cloudproof_py.findex import MasterKey, Label, utils
 from cloudproof_py.cover_crypt import (
     Policy,
     PolicyAxis,
     CoverCrypt,
     Attribute,
 )
-import json
-import sqlite3
 
 
 if __name__ == "__main__":
@@ -30,16 +31,15 @@ if __name__ == "__main__":
     )
     policy.add_axis(
         PolicyAxis(
-            "Department", ["MKG", "HR"], hierarchical=True
-        )  # HR can access mkg data about users
+            "Department", ["MKG", "HR", "SEC"], hierarchical=True
+        )  # HR can also access MKG data
     )
 
     CoverCryptInstance = CoverCrypt()
     cc_master_key, cc_public_key = CoverCryptInstance.generate_master_keys(policy)
 
     print("Cover Crypt: Choose the demo user access policy from the following")
-    print(", ".join([attr.to_string() for attr in policy.attributes()]))
-    print("")
+    print(", ".join([attr.to_string() for attr in policy.attributes()]), end="\n\n")
 
     country_attr = input("Country::")
     department_attr = input("Department::")
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         CoverCryptInstance, policy, cc_public_key, cc_userkey_fr_mkg, findex_key, label
     )
 
-    # Declare `data to encrypt` schema
+    # Declare `data to encrypt` scheme
     UserGenerator = CloudProofEntryGenerator(
         [
             CloudProofField(
@@ -94,30 +94,41 @@ if __name__ == "__main__":
             ),
             CloudProofField(
                 field_name="employeeNumber",
-                col_attributes=[Attribute("Department", "HR")],
+                col_attributes=[Attribute("Department", "SEC")],
                 is_searchable=False,
             ),
             CloudProofField(
                 field_name="security",
-                col_attributes=[Attribute("Department", "HR")],
+                col_attributes=[Attribute("Department", "SEC")],
                 is_searchable=False,
             ),
         ]
     )
 
     # User part
+    # DB connections
     conn = sqlite3.connect(":memory:")
-
-    with open("./data.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-        users = [UserGenerator.new_entry().set_values(user) for user in data]
 
     db_server = CloudProofDatabaseInterface(
         conn, FindexSQLite(conn), UserGenerator, kms
     )
 
+    # Insert user data to DB + Indexing
+    with open("./data.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+        users = [UserGenerator.new_entry().set_values(user) for user in data]
+
     db_server.insert_users(users)
     print("Findex: Done indexing", len(users), "users")
+
+    activate_auto_completion = input("Active search auto completion? [y/n] ") == "y"
+    if activate_auto_completion:
+        keywords = [keyword for user in users for keyword in user.get_keywords()]
+        db_server.findex_interface.upsert(
+            utils.generate_auto_completion(keywords),
+            kms.findex_master_key,
+            kms.findex_label,
+        )
 
     print("\n")
     print("You can now search the database for users by providing on keywords")
