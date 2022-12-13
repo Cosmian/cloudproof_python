@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from findex_db import FindexSQLite
-from cloudproof_db import (
+from cloudproof_utils import (
     CloudProofEntryGenerator,
     CloudProofField,
     CloudProofKMS,
@@ -37,8 +37,17 @@ if __name__ == "__main__":
     CoverCryptInstance = CoverCrypt()
     cc_master_key, cc_public_key = CoverCryptInstance.generate_master_keys(policy)
 
+    print("Cover Crypt: Choose the demo user access policy from the following")
+    print(", ".join([attr.to_string() for attr in policy.attributes()]))
+    print("")
+
+    country_attr = input("Country::")
+    department_attr = input("Department::")
+
     cc_userkey_fr_mkg = CoverCryptInstance.generate_user_secret_key(
-        cc_master_key, "Country::France && Department::MKG", policy
+        cc_master_key,
+        f"Country::{country_attr} && Department::{department_attr}",
+        policy,
     )
 
     # Findex
@@ -106,6 +115,17 @@ if __name__ == "__main__":
     db_server = CloudProofDatabaseInterface(
         conn, FindexSQLite(conn), UserGenerator, kms
     )
-    db_server.insert_users(users)
 
-    print(db_server.search_users(["Martin"]))
+    db_server.insert_users(users)
+    print("Findex: Done indexing", len(users), "users")
+
+    print("\n")
+    print("You can now search the database for users by providing on keywords")
+    print("Examples of keywords to try: 'Martin', 'France', 'Kalia'")
+
+    while True:
+        keyword = input("Enter a keyword: ")
+
+        print("Query results:")
+        for user in db_server.search_users([keyword]):
+            print("\t", user)
