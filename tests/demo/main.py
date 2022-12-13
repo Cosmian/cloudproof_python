@@ -29,11 +29,7 @@ if __name__ == "__main__":
             hierarchical=False,
         )
     )
-    policy.add_axis(
-        PolicyAxis(
-            "Department", ["MKG", "HR", "SEC"], hierarchical=True
-        )  # HR can also access MKG data
-    )
+    policy.add_axis(PolicyAxis("Department", ["MKG", "HR", "SEC"], hierarchical=True))
 
     CoverCryptInstance = CoverCrypt()
     cc_master_key, cc_public_key = CoverCryptInstance.generate_master_keys(policy)
@@ -131,8 +127,8 @@ if __name__ == "__main__":
         )
 
     print("\n")
-    print("You can now search the database for users by providing on keywords")
-    print("Examples of keywords to try: 'Martin', 'France', 'Kalia'")
+    print("You can now search the database for users by providing keywords")
+    print("Examples of words to try: 'Martin', 'France', 'Kalia'")
 
     while True:
         keyword = input("Enter a keyword: ")

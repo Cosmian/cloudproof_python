@@ -75,7 +75,7 @@ class CloudProofField:
         self.value.set_data(val)
 
     def __repr__(self) -> str:
-        return f"""{self.name}: {self.value}"""
+        return f"""{self.name}: {str(self.value):12}"""
 
 
 class CloudProofEntry:
