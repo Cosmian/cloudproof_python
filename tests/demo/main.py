@@ -1,138 +1,197 @@
 # -*- coding: utf-8 -*-
 import json
 import sqlite3
+from random import randbytes
+from termcolor import colored
 
 from findex_db import FindexSQLite
-from cloudproof_utils import (
-    CloudProofEntryGenerator,
-    CloudProofField,
-    CloudProofKMS,
-    CloudProofDatabaseInterface,
-)
+from cloudproof_py import cover_crypt, findex
 
-from cloudproof_py.findex import MasterKey, Label, utils
-from cloudproof_py.cover_crypt import (
-    Policy,
-    PolicyAxis,
-    CoverCrypt,
-    Attribute,
-)
+sql_create_users_table = """CREATE TABLE IF NOT EXISTS users (
+                                            id BLOB PRIMARY KEY,
+                                            firstName BLOB NOT NULL,
+                                            lastName BLOB NOT NULL,
+                                            email BLOB NOT NULL,
+                                            phone BLOB NOT NULL,
+                                            country BLOB NOT NULL,
+                                            region BLOB NOT NULL,
+                                            employeeNumber BLOB NOT NULL,
+                                            security BLOB NOT NULL
+
+                                        );"""
+
+sql_create_entry_table = """CREATE TABLE IF NOT EXISTS entry_table (
+                                            uid BLOB PRIMARY KEY,
+                                            value BLOB NOT NULL
+                                        );"""
+
+sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
+                                            uid BLOB PRIMARY KEY,
+                                            value BLOB NOT NULL
+                                        );"""
 
 
 if __name__ == "__main__":
-    # Admin part
-    policy = Policy()
+    # Creating DB tables
+    conn = sqlite3.connect(":memory:")
+    # Table to store encrypted data
+    conn.execute(sql_create_users_table)
+    # Indexing tables required by Findex
+    conn.execute(sql_create_entry_table)
+    conn.execute(sql_create_chain_table)
+
+    # Initialize CoverCrypt
+    policy = cover_crypt.Policy()
     policy.add_axis(
-        PolicyAxis(
+        cover_crypt.PolicyAxis(
             "Country",
             ["France", "Spain", "Germany"],
             hierarchical=False,
         )
     )
-    policy.add_axis(PolicyAxis("Department", ["MKG", "HR", "SEC"], hierarchical=True))
+    policy.add_axis(
+        cover_crypt.PolicyAxis("Department", ["MKG", "HR", "SEC"], hierarchical=True)
+    )
+    cc_interface = cover_crypt.CoverCrypt()
+    cc_master_key, cc_public_key = cc_interface.generate_master_keys(policy)
 
-    CoverCryptInstance = CoverCrypt()
-    cc_master_key, cc_public_key = CoverCryptInstance.generate_master_keys(policy)
-
-    print("Cover Crypt: Choose the demo user access policy from the following")
-    print(", ".join([attr.to_string() for attr in policy.attributes()]), end="\n\n")
-
-    country_attr = input("Country::")
-    department_attr = input("Department::")
-
-    cc_userkey_fr_mkg = CoverCryptInstance.generate_user_secret_key(
+    # Creating user key with different policy access
+    key_Alice = cc_interface.generate_user_secret_key(
         cc_master_key,
-        f"Country::{country_attr} && Department::{department_attr}",
+        "Country::France && Department::MKG",
         policy,
     )
 
-    # Findex
-    findex_key = MasterKey.random()
-    label = Label.random()
-
-    kms = CloudProofKMS(
-        CoverCryptInstance, policy, cc_public_key, cc_userkey_fr_mkg, findex_key, label
+    key_Bob = cc_interface.generate_user_secret_key(
+        cc_master_key,
+        "Country::Spain && Department::HR",
+        policy,
     )
 
-    # Declare `data to encrypt` scheme
-    UserGenerator = CloudProofEntryGenerator(
-        [
-            CloudProofField(
-                field_name="firstName",
-                col_attributes=[Attribute("Department", "MKG")],
-                is_searchable=True,
-            ),
-            CloudProofField(
-                field_name="lastName",
-                col_attributes=[Attribute("Department", "MKG")],
-                is_searchable=True,
-            ),
-            CloudProofField(
-                field_name="phone",
-                col_attributes=[Attribute("Department", "HR")],
-                is_searchable=False,
-            ),
-            CloudProofField(
-                field_name="email",
-                col_attributes=[Attribute("Department", "HR")],
-                is_searchable=False,
-            ),
-            CloudProofField(
-                field_name="country",
-                col_attributes=[Attribute("Department", "HR")],
-                row_policy_axis="Country",
-                is_searchable=True,
-            ),
-            CloudProofField(
-                field_name="region",
-                col_attributes=[Attribute("Department", "HR")],
-                is_searchable=True,
-            ),
-            CloudProofField(
-                field_name="employeeNumber",
-                col_attributes=[Attribute("Department", "SEC")],
-                is_searchable=False,
-            ),
-            CloudProofField(
-                field_name="security",
-                col_attributes=[Attribute("Department", "SEC")],
-                is_searchable=False,
-            ),
-        ]
+    key_Charlie = cc_interface.generate_user_secret_key(
+        cc_master_key,
+        "(Country::France || Country::Spain) && Department::SEC",
+        policy,
     )
 
-    # User part
-    # DB connections
-    conn = sqlite3.connect(":memory:")
-
-    db_server = CloudProofDatabaseInterface(
-        conn, FindexSQLite(conn), UserGenerator, kms
-    )
+    # Declare encryption scheme
+    mapping_field_department = {
+        "firstName": "MKG",
+        "lastName": "MKG",
+        "phone": "HR",
+        "email": "HR",
+        "country": "HR",
+        "region": "HR",
+        "employeeNumber": "SEC",
+        "security": "SEC",
+    }
 
     # Insert user data to DB + Indexing
     with open("./data.json", "r", encoding="utf-8") as f:
-        data = json.load(f)
-        users = [UserGenerator.new_entry().set_values(user) for user in data]
+        users = json.load(f)
 
-    db_server.insert_users(users)
+    # Encryption + Insertion in DB
+    user_db_uids = []
+    for user in users:
+        # Encrypt each column of the user individually
+        encrypted_user = [
+            cc_interface.encrypt(
+                policy,
+                f"Country::{user['country']} && Department::{mapping_field_department[col_name]}",
+                cc_public_key,
+                col_value.encode("utf-8"),
+            )
+            for col_name, col_value in user.items()
+        ]
+        db_uid = randbytes(32)
+        user_db_uids.append(db_uid)
+
+        conn.execute(
+            """INSERT INTO
+            users(id,firstName,lastName, email, phone, country, region, employeeNumber, security)
+            VALUES(?,?,?,?,?,?,?,?,?)""",
+            (db_uid, *encrypted_user),
+        )
+    print("CoverCrypt: encryption and db insertion done!")
+
+    # Initialize Findex
+    findex_master_key = findex.MasterKey.random()
+    findex_label = findex.Label.random()
+    findex_interface = FindexSQLite(conn)
+
+    # Upsert keywords
+    mapping_indexed_values_to_keywords = {
+        findex.IndexedValue.from_location(user_id): list(user.values())
+        for user_id, user in zip(user_db_uids, users)
+    }
+    findex_interface.upsert(
+        mapping_indexed_values_to_keywords, findex_master_key, findex_label
+    )
     print("Findex: Done indexing", len(users), "users")
 
     activate_auto_completion = input("Active search auto completion? [y/n] ") == "y"
     if activate_auto_completion:
-        keywords = [keyword for user in users for keyword in user.get_keywords()]
-        db_server.findex_interface.upsert(
-            utils.generate_auto_completion(keywords),
-            kms.findex_master_key,
-            kms.findex_label,
+        keywords = [keyword for user in users for keyword in user.values()]
+        findex_interface.upsert(
+            findex.utils.generate_auto_completion(keywords),
+            findex_master_key,
+            findex_label,
         )
 
-    print("\n")
-    print("You can now search the database for users by providing keywords")
-    print("Examples of words to try: 'Martin', 'France', 'Kalia'")
+    cc_user_keys = {"Alice": key_Alice, "Bob": key_Bob, "Charlie": key_Charlie}
 
     while True:
+        print("\n Available user keys:")
+        print("\t Alice: Country::France && Department::MKG")
+        print("\t Bob: Country::Spain && Department::HR")
+        print("\t Charlie: (Country::France || Country::Spain) && Department::SEC")
+
+        input_user_key = ""
+        while input_user_key not in cc_user_keys:
+            input_user_key = input(
+                "Choose a user key from 'Alice', 'Bob' and 'Charlie': "
+            )
+        user_key = cc_user_keys[input_user_key]
+
+        print("\n You can now search the database for users by providing keywords")
+        print("Examples of words to try: 'Martin', 'France', 'Kalia'")
         keyword = input("Enter a keyword: ")
 
+        # 1. Findex search
+        found_users_locations = findex_interface.search(
+            [keyword], findex_master_key, findex_label
+        )[keyword]
+        found_users_uid = []
+        for user in found_users_locations:
+            if user_uid := user.get_location():
+                found_users_uid.append(user_uid)
+
+        # 2. Query user database
+        str_uids = ",".join("?" * len(found_users_uid))
+        cur = conn.execute(
+            f"SELECT * FROM users WHERE id IN ({str_uids})",
+            found_users_uid,
+        )
+        encrypted_data = cur.fetchall()
+
+        # 3. Decryption
         print("Query results:")
-        for user in db_server.search_users([keyword]):
-            print("\t", user)
+        for db_user in encrypted_data:
+            encrypted_user = db_user[1:]  # skip the uid
+            for i, col_name in enumerate(mapping_field_department):
+                try:
+                    decrypted_value, _ = cc_interface.decrypt(
+                        user_key, encrypted_user[i]
+                    )
+                    print(
+                        f"{col_name}: {decrypted_value.decode('utf-8'):12.12}",
+                        end=" | ",
+                    )
+                except Exception:
+                    # Our user doesn't have access to this data
+                    print(
+                        f"{col_name}:",
+                        colored("Unauthorized", "red", attrs=["bold"]),
+                        end=" | ",
+                    )
+            print("")

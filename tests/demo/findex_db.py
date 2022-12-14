@@ -5,34 +5,12 @@ from cloudproof_py.findex import Findex, IndexedValue
 from typing import Dict, List, Optional, Tuple
 
 
-def create_table(conn, create_table_sql):
-    try:
-        c = conn.cursor()
-        c.execute(create_table_sql)
-    except sqlite3.Error as e:
-        print(e)
-
-
-sql_create_entry_table = """CREATE TABLE IF NOT EXISTS entry_table (
-                                            uid BLOB PRIMARY KEY,
-                                            value BLOB NOT NULL
-                                        );"""
-
-sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
-                                            uid BLOB PRIMARY KEY,
-                                            value BLOB NOT NULL
-                                        );"""
-
-
 class FindexSQLite(Findex.FindexTrait):
     """Implementation of Findex traits for a SQLite backend"""
 
     def __init__(self, db_conn: sqlite3.Connection) -> None:
         super().__init__()
         self.conn = db_conn
-
-        create_table(self.conn, sql_create_entry_table)
-        create_table(self.conn, sql_create_chain_table)
 
     def fetch_entry_table(
         self, entry_uids: Optional[List[bytes]] = None
@@ -153,7 +131,7 @@ class FindexSQLite(Findex.FindexTrait):
         )
 
     def list_removed_locations(self, db_uids: List[bytes]) -> List[bytes]:
-        """Check wether uids still exist in the database
+        """Check whether uids still exist in the database
 
         Args:
             db_uids (List[bytes]): uids to check

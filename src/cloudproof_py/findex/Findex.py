@@ -179,7 +179,7 @@ class FindexTrait(metaclass=ABCMeta):
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
 
         Returns:
-            List[IndexedValue]: UIDs corresponding to the keywords
+            List[IndexedValue]: found UIDs corresponding to the keywords
         """
         return self.findex.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
