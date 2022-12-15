@@ -168,7 +168,7 @@ class FindexTrait(metaclass=ABCMeta):
         label: Label,
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
-    ) -> List[IndexedValue]:
+    ) -> Dict[str, List[IndexedValue]]:
         """Recursively search Findex graphs for `Location` corresponding to the given `KeyWord`.
 
         Args:
@@ -179,7 +179,7 @@ class FindexTrait(metaclass=ABCMeta):
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
 
         Returns:
-            List[IndexedValue]: UIDs corresponding to the keywords
+            List[IndexedValue]: found UIDs corresponding to the keywords
         """
         return self.findex.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth

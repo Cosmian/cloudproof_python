@@ -29,7 +29,7 @@ class TestCoverCrypt(unittest.TestCase):
         master_private_key, public_key = CoverCryptInstance.generate_master_keys(policy)
 
         """
-        Generating user keys
+        Messages encryption
         """
 
         protected_mkg_data = b"protected_mkg_message"
@@ -57,7 +57,7 @@ class TestCoverCrypt(unittest.TestCase):
         )
 
         """
-        Messages encryption
+        Generating user keys
         """
 
         confidential_mkg_userKey = CoverCryptInstance.generate_user_secret_key(

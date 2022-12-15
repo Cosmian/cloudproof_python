@@ -60,3 +60,4 @@ repos:
     rev: 'v0.990'
     hooks:
     - id: mypy
+      additional_dependencies: [types_termcolor==1.1.6]
