@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import sqlite3
-from random import randbytes
+from secrets import token_bytes
 from termcolor import colored
 
 from findex_db import FindexSQLite
@@ -103,7 +103,7 @@ if __name__ == "__main__":
             )
             for col_name, col_value in user.items()
         ]
-        db_uid = randbytes(32)
+        db_uid = token_bytes(32)
         user_db_uids.append(db_uid)
 
         conn.execute(
@@ -161,9 +161,13 @@ if __name__ == "__main__":
         # 1. Findex search
         found_users_locations = findex_interface.search(
             [keyword], findex_master_key, findex_label
-        )[keyword]
+        )
+        if len(found_users_locations) == 0:
+            print(colored("No user found!", "red", attrs=["bold"]))
+            continue
+
         found_users_uid = []
-        for user in found_users_locations:
+        for user in found_users_locations[keyword]:
             if user_uid := user.get_location():
                 found_users_uid.append(user_uid)
 
