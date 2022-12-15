@@ -9,6 +9,9 @@ def generate_auto_completion(
     encoding: str = "utf-8",
 ) -> Dict[IndexedValue, List[str]]:
     """Generate a Findex graph of all sub-words from a list of keywords.
+    For the keyword "Thibaud" with `min_word_len` at 3 it will return
+    these aliases ["Thi" => "Thib", "Thib" => "Thiba", "Thiba" => "Thibau", "Thibau" => "Thibaud"]
+
     The original keywords and corresponding locations must be inserted in Findex independently.
 
     Args:

@@ -119,11 +119,12 @@ if __name__ == "__main__":
     findex_label = findex.Label.random()
     findex_interface = FindexSQLite(conn)
 
-    # Upsert keywords
+    # Mapping of the users database UID to the corresponding keywords (firstname, lastname, etc)
     mapping_indexed_values_to_keywords = {
         findex.IndexedValue.from_location(user_id): list(user.values())
         for user_id, user in zip(user_db_uids, users)
     }
+    # Upsert keywords
     findex_interface.upsert(
         mapping_indexed_values_to_keywords, findex_master_key, findex_label
     )
