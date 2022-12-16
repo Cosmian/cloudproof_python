@@ -151,7 +151,36 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_compact_callbacks(self.update_lines, self.list_removed_locations)
+        self.set_compact_callbacks(
+            self.fetch_entry_table,
+            self.fetch_chain_table,
+            self.update_lines,
+            self.list_removed_locations,
+        )
+
+    @abstractmethod
+    def fetch_entry_table(
+        self, entry_uids: Optional[List[bytes]] = None
+    ) -> Dict[bytes, bytes]:
+        """Query the entry table
+
+        Args:
+            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+
+        Returns:
+            Dict[bytes, bytes]
+        """
+
+    @abstractmethod
+    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
+        """Query the chain table
+
+        Args:
+            chain_uids (List[bytes]): uids to query
+
+        Returns:
+            Dict[bytes, bytes]
+        """
 
     @abstractmethod
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
@@ -209,9 +238,9 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
         This function should:
 
         - remove all the Index Entry Table
-        - add `new_encrypted_entry_table_items` to the Index Entry Table
         - remove `removed_chain_table_uids` from the Index Chain Table
         - add `new_encrypted_chain_table_items` to the Index Chain Table
+        - add `new_encrypted_entry_table_items` to the Index Entry Table
 
         The order of these operations is not important but have some
         implications. This implementation keeps the database small but prevents
@@ -231,9 +260,9 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
         """
 
         self.remove_entry_table()
-        self.insert_entry_table(new_encrypted_entry_table_items)
         self.remove_chain_table(removed_chain_table_uids)
         self.insert_chain_table(new_encrypted_chain_table_items)
+        self.insert_entry_table(new_encrypted_entry_table_items)
 
     def compact(
         self,
