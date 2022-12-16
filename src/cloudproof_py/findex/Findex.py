@@ -4,17 +4,32 @@ from typing import Dict, List, Optional, Tuple
 from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
-class FindexTrait(metaclass=ABCMeta):
+class FindexUpsert(InternalFindex, metaclass=ABCMeta):
+    """Implement this class to use Findex Upsert API"""
+
     def __init__(self) -> None:
-        self.findex = InternalFindex(
+        super().__init__()
+        self.set_upsert_callbacks(
             self.fetch_entry_table,
             self.fetch_chain_table,
             self.upsert_entry_table,
             self.insert_chain_table,
-            self.update_lines,
-            self.list_removed_locations,
-            self.progress_callback,
         )
+
+    def upsert(
+        self,
+        dict_indexed_values: Dict[IndexedValue, List[str]],
+        master_key: MasterKey,
+        label: Label,
+    ) -> None:
+        """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
+
+        Args:
+            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue` to `Keyword`
+            master_key (MasterKey): the user master key
+            label (Label): label used to allow versioning
+        """
+        self.upsert_wrapper(dict_indexed_values, master_key, label)
 
     @abstractmethod
     def fetch_entry_table(
@@ -54,12 +69,89 @@ class FindexTrait(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def insert_entry_table(self, entries_items: Dict[bytes, bytes]) -> None:
-        """Insert new key-value pairs in the entry table
+    def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
+        """Insert new key-value pairs in the chain table
 
         Args:
-            entries_items (Dict[bytes, bytes])
+            chain_items (Dict[bytes, bytes])
         """
+
+
+class FindexSearch(InternalFindex, metaclass=ABCMeta):
+    """Implement this class to use Findex Search API"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.set_search_callbacks(
+            self.fetch_entry_table, self.fetch_chain_table, self.progress_callback
+        )
+
+    @abstractmethod
+    def fetch_entry_table(
+        self, entry_uids: Optional[List[bytes]] = None
+    ) -> Dict[bytes, bytes]:
+        """Query the entry table
+
+        Args:
+            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+
+        Returns:
+            Dict[bytes, bytes]
+        """
+
+    @abstractmethod
+    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
+        """Query the chain table
+
+        Args:
+            chain_uids (List[bytes]): uids to query
+
+        Returns:
+            Dict[bytes, bytes]
+        """
+
+    @abstractmethod
+    def progress_callback(self, results: List[IndexedValue]) -> bool:
+        """Intermediate search results
+
+        Args:
+            results (List[IndexedValue]): new locations found
+
+        Returns:
+            bool: continue recursive search
+        """
+
+    def search(
+        self,
+        keywords: List[str],
+        master_key: MasterKey,
+        label: Label,
+        max_result_per_keyword: int = 2**32 - 1,
+        max_depth: int = 100,
+    ) -> Dict[str, List[IndexedValue]]:
+        """Recursively search Findex graphs for `Location` corresponding to the given `KeyWord`.
+
+        Args:
+            keywords (List[str]): keywords to search using Findex
+            master_key (MasterKey): user secret key
+            label (Label): public label used in keyword hashing
+            max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
+            max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
+
+        Returns:
+            List[IndexedValue]: found UIDs corresponding to the keywords
+        """
+        return self.search_wrapper(
+            keywords, master_key, label, max_result_per_keyword, max_depth
+        )
+
+
+class FindexCompact(InternalFindex, metaclass=ABCMeta):
+    """Implement this class to use Findex Compact API"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.set_compact_callbacks(self.update_lines, self.list_removed_locations)
 
     @abstractmethod
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
@@ -67,6 +159,14 @@ class FindexTrait(metaclass=ABCMeta):
 
         Args:
             chain_items (Dict[bytes, bytes])
+        """
+
+    @abstractmethod
+    def insert_entry_table(self, entries_items: Dict[bytes, bytes]) -> None:
+        """Insert new key-value pairs in the entry table
+
+        Args:
+            entries_items (Dict[bytes, bytes])
         """
 
     @abstractmethod
@@ -95,17 +195,6 @@ class FindexTrait(metaclass=ABCMeta):
 
         Returns:
             List[bytes]: list of uids that were removed
-        """
-
-    @abstractmethod
-    def progress_callback(self, results: List[IndexedValue]) -> bool:
-        """Intermediate search results
-
-        Args:
-            results (List[IndexedValue]): new locations found
-
-        Returns:
-            bool: continue recursive search
         """
 
     def update_lines(
@@ -146,45 +235,6 @@ class FindexTrait(metaclass=ABCMeta):
         self.remove_chain_table(removed_chain_table_uids)
         self.insert_chain_table(new_encrypted_chain_table_items)
 
-    def upsert(
-        self,
-        dict_indexed_values: Dict[IndexedValue, List[str]],
-        master_key: MasterKey,
-        label: Label,
-    ) -> None:
-        """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
-
-        Args:
-            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue` to `Keyword`
-            master_key (MasterKey): the user master key
-            label (Label): label used to allow versioning
-        """
-        self.findex.upsert_wrapper(dict_indexed_values, master_key, label)
-
-    def search(
-        self,
-        keywords: List[str],
-        master_key: MasterKey,
-        label: Label,
-        max_result_per_keyword: int = 2**32 - 1,
-        max_depth: int = 100,
-    ) -> Dict[str, List[IndexedValue]]:
-        """Recursively search Findex graphs for `Location` corresponding to the given `KeyWord`.
-
-        Args:
-            keywords (List[str]): keywords to search using Findex
-            master_key (MasterKey): user secret key
-            label (Label): public label used in keyword hashing
-            max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
-            max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
-
-        Returns:
-            List[IndexedValue]: found UIDs corresponding to the keywords
-        """
-        return self.findex.search_wrapper(
-            keywords, master_key, label, max_result_per_keyword, max_depth
-        )
-
     def compact(
         self,
         num_reindexing_before_full_set: int,
@@ -201,6 +251,6 @@ class FindexTrait(metaclass=ABCMeta):
             new_master_key (MasterKey): newly generated key
             new_label (Label): newly generated label
         """
-        self.findex.compact_wrapper(
+        self.compact_wrapper(
             num_reindexing_before_full_set, master_key, new_master_key, new_label
         )
