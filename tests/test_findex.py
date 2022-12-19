@@ -31,7 +31,7 @@ sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
                                         );"""
 
 
-class SQLiteBackend(Findex.FindexTrait):
+class SQLiteBackend(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompact):
     # Start implementing Findex methods
 
     def fetch_entry_table(

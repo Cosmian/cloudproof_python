@@ -168,7 +168,8 @@ if __name__ == "__main__":
 
         found_users_uid = []
         for user in found_users_locations[keyword]:
-            if user_uid := user.get_location():
+            user_uid = user.get_location()
+            if user_uid:
                 found_users_uid.append(user_uid)
 
         # 2. Query user database
