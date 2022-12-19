@@ -227,14 +227,14 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def list_removed_locations(self, db_uids: List[bytes]) -> List[bytes]:
-        """Check whether uids still exist in the database.
+    def list_removed_locations(self, locations: List[bytes]) -> List[bytes]:
+        """Check whether the given `Locations` still exist.
 
         Args:
-            db_uids (List[bytes]): uids to check
+            locations (List[bytes]): `Locations` to check
 
         Returns:
-            List[bytes]: list of uids that were removed
+            List[bytes]: list of `Locations` that were removed
         """
 
     def update_lines(
@@ -253,7 +253,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
         - inserts `new_chain_table_items` into the Chain Table;
         - inserts `new_entry_table_items` into the Entry Table.
 
-        The order of these operations is not important but have some
+        The order of these operations is not important but has some
         implications. This implementation keeps the database small but prevents
         using the index during the `update_lines`.
 

@@ -23,7 +23,7 @@ make html
 
 ## Demo
 
-An interactive cli demo combining policy based encryption with searchable keywords.
+An interactive CLI demo combining policy-based encryption with searchable keywords.
 
 Users from `./examples/cli_demo/data.json` are encrypted using CoverCrypt and indexed via Findex.
 
@@ -35,7 +35,7 @@ scripts/run_demo.sh
 
 ## Versions Correspondence
 
-The library depends on [CoverCrypt](https://github.com/Cosmian/cover_crypt) and [Findex](https://github.com/Cosmian/findex).
+This library depends on [CoverCrypt](https://github.com/Cosmian/cover_crypt) and [Findex](https://github.com/Cosmian/findex).
 
 This table shows the minimum version correspondence between the various components.
 
