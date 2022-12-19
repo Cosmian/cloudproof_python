@@ -7,6 +7,10 @@ from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 class FindexUpsert(InternalFindex, metaclass=ABCMeta):
     """Implement this class to use Findex Upsert API"""
 
+    def __new__(cls, *args, **kargs):
+        # allow constructor args without passing them to InternalFindex
+        return InternalFindex.__new__(cls)
+
     def __init__(self) -> None:
         super().__init__()
         self.set_upsert_callbacks(
@@ -25,7 +29,8 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
         """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
 
         Args:
-            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue` to `Keyword`
+            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue`
+                                                            to a list of `Keyword`
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
         """
@@ -35,7 +40,7 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
     def fetch_entry_table(
         self, entry_uids: Optional[List[bytes]] = None
     ) -> Dict[bytes, bytes]:
-        """Query the entry table
+        """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
@@ -46,7 +51,7 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
-        """Query the chain table
+        """Query the Chain Table.
 
         Args:
             chain_uids (List[bytes]): uids to query
@@ -59,7 +64,7 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
     def upsert_entry_table(
         self, entry_updates: Dict[bytes, Tuple[bytes, bytes]]
     ) -> Dict[bytes, bytes]:
-        """Update key-value pairs in the entry table
+        """Update key-value pairs in the Entry Table.
 
         Args:
             entry_updates (Dict[bytes, Tuple[bytes, bytes]]): uid -> (old_value, new_value)
@@ -70,7 +75,7 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
-        """Insert new key-value pairs in the chain table
+        """Insert new key-value pairs in the Chain Table.
 
         Args:
             chain_items (Dict[bytes, bytes])
@@ -79,6 +84,9 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
 
 class FindexSearch(InternalFindex, metaclass=ABCMeta):
     """Implement this class to use Findex Search API"""
+
+    def __new__(cls, *args, **kargs):
+        return InternalFindex.__new__(cls)
 
     def __init__(self) -> None:
         super().__init__()
@@ -90,7 +98,7 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
     def fetch_entry_table(
         self, entry_uids: Optional[List[bytes]] = None
     ) -> Dict[bytes, bytes]:
-        """Query the entry table
+        """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
@@ -101,7 +109,7 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
-        """Query the chain table
+        """Query the Chain Table.
 
         Args:
             chain_uids (List[bytes]): uids to query
@@ -112,7 +120,7 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def progress_callback(self, results: List[IndexedValue]) -> bool:
-        """Intermediate search results
+        """Intermediate search results.
 
         Args:
             results (List[IndexedValue]): new locations found
@@ -139,7 +147,7 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
 
         Returns:
-            List[IndexedValue]: found UIDs corresponding to the keywords
+            List[IndexedValue]: `IndexedValue` found for the given `Keyword`
         """
         return self.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
@@ -148,6 +156,9 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
 
 class FindexCompact(InternalFindex, metaclass=ABCMeta):
     """Implement this class to use Findex Compact API"""
+
+    def __new__(cls, *args, **kargs):
+        return InternalFindex.__new__(cls)
 
     def __init__(self) -> None:
         super().__init__()
@@ -162,7 +173,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
     def fetch_entry_table(
         self, entry_uids: Optional[List[bytes]] = None
     ) -> Dict[bytes, bytes]:
-        """Query the entry table
+        """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
@@ -173,7 +184,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
-        """Query the chain table
+        """Query the Chain Table.
 
         Args:
             chain_uids (List[bytes]): uids to query
@@ -184,7 +195,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
-        """Insert new key-value pairs in the chain table
+        """Insert new key-value pairs in the Chain Table.
 
         Args:
             chain_items (Dict[bytes, bytes])
@@ -192,7 +203,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def insert_entry_table(self, entries_items: Dict[bytes, bytes]) -> None:
-        """Insert new key-value pairs in the entry table
+        """Insert new key-value pairs in the Entry Table.
 
         Args:
             entries_items (Dict[bytes, bytes])
@@ -200,7 +211,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def remove_entry_table(self, entry_uids: Optional[List[bytes]] = None) -> None:
-        """Remove entries from entry table
+        """Remove entries from Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uid of entries to delete. if None,
@@ -209,7 +220,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def remove_chain_table(self, chain_uids: List[bytes]) -> None:
-        """Remove entries from chain table
+        """Remove entries from Chain Table.
 
         Args:
             chain_uids (List[bytes]): uids to remove from the chain table
@@ -217,7 +228,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
     @abstractmethod
     def list_removed_locations(self, db_uids: List[bytes]) -> List[bytes]:
-        """Check wether uids still exist in the database
+        """Check whether uids still exist in the database.
 
         Args:
             db_uids (List[bytes]): uids to check
@@ -237,10 +248,10 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
         Update the database with the new values.
         This function should:
 
-        - remove all the Index Entry Table
-        - remove `removed_chain_table_uids` from the Index Chain Table
-        - add `new_encrypted_chain_table_items` to the Index Chain Table
-        - add `new_encrypted_entry_table_items` to the Index Entry Table
+        - removes all the Entry Table;
+        - removes `chain_table_uids_to_remove` from the Chain Table;
+        - inserts `new_chain_table_items` into the Chain Table;
+        - inserts `new_entry_table_items` into the Entry Table.
 
         The order of these operations is not important but have some
         implications. This implementation keeps the database small but prevents
@@ -248,12 +259,12 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
 
         Override this method if you want another implementation, e.g. :
 
-        1. save all UIDs from the current Index Entry Table
-        2. add `new_encrypted_entry_table_items` to the Index Entry Table
-        3. add `new_encrypted_chain_table_items` to the Index Chain Table
-        4. publish new label to users
-        5. remove old lines from the Index Entry Table (using the saved UIDs in 1.)
-        6. remove `removed_chain_table_uids` from the Index Chain Table
+        1. saves all Entry Table UIDs;
+        2. inserts `new_chain_table_items` into the Chain Table;
+        3. inserts `new_entry_table_items` into the Entry Table;
+        4. publish new label to users;
+        5. remove old lines from the Entry Table (using the saved UIDs in 1.);
+        6. removes `chain_table_uids_to_remove` from the Chain Table.
 
         With this implementation, the index tables are much bigger during a small duration,
         but users can continue using the index during the `update_lines`.

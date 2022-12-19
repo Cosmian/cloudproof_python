@@ -5,7 +5,7 @@ from cloudproof_py.findex import Findex, IndexedValue
 from typing import Dict, List, Optional, Tuple
 
 
-class FindexSQLite(Findex.FindexTrait):
+class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
     """Implementation of Findex traits for a SQLite backend"""
 
     def __init__(self, db_conn: sqlite3.Connection) -> None:
