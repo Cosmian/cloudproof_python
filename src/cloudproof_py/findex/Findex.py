@@ -22,19 +22,19 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
 
     def upsert(
         self,
-        dict_indexed_values: Dict[IndexedValue, List[str]],
+        indexed_value_to_keywords: Dict[IndexedValue, List[str]],
         master_key: MasterKey,
         label: Label,
     ) -> None:
         """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
 
         Args:
-            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue`
-                                                            to a list of `Keyword`
+            indexed_value_to_keywords (Dict[bytes, List[bytes]]): map of `IndexedValue`
+                                                                to a list of `Keyword`
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
         """
-        self.upsert_wrapper(dict_indexed_values, master_key, label)
+        self.upsert_wrapper(indexed_value_to_keywords, master_key, label)
 
     @abstractmethod
     def fetch_entry_table(
@@ -137,7 +137,7 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
     ) -> Dict[str, List[IndexedValue]]:
-        """Recursively search Findex graphs for `Location` corresponding to the given `KeyWord`.
+        """Recursively search Findex graphs for `IndexedValues` corresponding to the given `Keyword`.
 
         Args:
             keywords (List[str]): keywords to search using Findex
@@ -147,7 +147,7 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
 
         Returns:
-            List[IndexedValue]: `IndexedValue` found for the given `Keyword`
+            Dict[str, List[IndexedValue]]: `IndexedValues` found by `Keyword`
         """
         return self.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
