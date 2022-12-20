@@ -17,8 +17,7 @@ scripts/build.sh [-i] [-t]
 
 ```sh
 pip install -r docs/requirements.txt
-cd docs
-make html
+scripts/build.sh -d
 ```
 
 ## Demo

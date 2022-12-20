@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copy py interface files from PyO3 libs inside our projects
-# Theses files are used by sphinx auto-api to generate the docs of our PyO3 libs
+# Theses files are used by sphinx auto-api to generate the docs of the PyO3 libs
 
 import pkgutil
 
@@ -14,10 +14,6 @@ if __name__ == "__main__":
     print(
         "LOG extract_lib_types: copying function signatures from", ", ".join(PKGs_dir)
     )
-
-    # Marker file for PEP 561
-    with open(f"{SRC_DIR}/py.typed", "w", encoding="utf-8") as f:
-        pass
 
     for pkg_name, dest_dir in PKGs_dir.items():
         try:
