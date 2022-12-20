@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
-class FindexUpsert(InternalFindex, metaclass=ABCMeta):
-    """Implement this class to use Findex Upsert API"""
+class FindexBase(metaclass=ABCMeta):
+    def __init__(self) -> None:
+        self.findex_core = InternalFindex()
 
-    def __new__(cls, *args, **kargs):
-        # allow constructor args without passing them to InternalFindex
-        return InternalFindex.__new__(cls)
+
+class FindexUpsert(FindexBase, metaclass=ABCMeta):
+    """Implement this class to use Findex Upsert API"""
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_upsert_callbacks(
+        self.findex_core.set_upsert_callbacks(
             self.fetch_entry_table,
             self.fetch_chain_table,
             self.upsert_entry_table,
@@ -34,12 +35,10 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
         """
-        self.upsert_wrapper(indexed_value_to_keywords, master_key, label)
+        self.findex_core.upsert_wrapper(indexed_value_to_keywords, master_key, label)
 
     @abstractmethod
-    def fetch_entry_table(
-        self, entry_uids: Optional[List[bytes]] = None
-    ) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
@@ -82,22 +81,17 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
         """
 
 
-class FindexSearch(InternalFindex, metaclass=ABCMeta):
+class FindexSearch(FindexBase, metaclass=ABCMeta):
     """Implement this class to use Findex Search API"""
-
-    def __new__(cls, *args, **kargs):
-        return InternalFindex.__new__(cls)
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_search_callbacks(
+        self.findex_core.set_search_callbacks(
             self.fetch_entry_table, self.fetch_chain_table, self.progress_callback
         )
 
     @abstractmethod
-    def fetch_entry_table(
-        self, entry_uids: Optional[List[bytes]] = None
-    ) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
@@ -149,37 +143,41 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
         Returns:
             Dict[str, List[IndexedValue]]: `IndexedValues` found by `Keyword`
         """
-        return self.search_wrapper(
+        return self.findex_core.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
         )
 
 
-class FindexCompact(InternalFindex, metaclass=ABCMeta):
+class FindexCompact(FindexBase, metaclass=ABCMeta):
     """Implement this class to use Findex Compact API"""
-
-    def __new__(cls, *args, **kargs):
-        return InternalFindex.__new__(cls)
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_compact_callbacks(
+        self.findex_core.set_compact_callbacks(
             self.fetch_entry_table,
             self.fetch_chain_table,
             self.update_lines,
             self.list_removed_locations,
+            self.fetch_all_entry_table_uids,
         )
 
     @abstractmethod
-    def fetch_entry_table(
-        self, entry_uids: Optional[List[bytes]] = None
-    ) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
-            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+            entry_uids (List[bytes]): uids to query
 
         Returns:
             Dict[bytes, bytes]
+        """
+
+    @abstractmethod
+    def fetch_all_entry_table_uids(self) -> Set[bytes]:
+        """Return all UIDs in the Entry Table.
+
+        Returns:
+            Set[bytes]
         """
 
     @abstractmethod
@@ -291,6 +289,6 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
             new_master_key (MasterKey): newly generated key
             new_label (Label): newly generated label
         """
-        self.compact_wrapper(
+        self.findex_core.compact_wrapper(
             num_reindexing_before_full_set, master_key, new_master_key, new_label
         )
