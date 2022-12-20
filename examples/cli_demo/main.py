@@ -159,12 +159,13 @@ if __name__ == "__main__":
         keyword = input("Enter a keyword: ")
 
         # 1. Findex search
-        found_users_uids = findex_interface.search(
+        found_users = findex_interface.search(
             [keyword], findex_master_key, findex_label
-        )[keyword]
-        if len(found_users_uids) == 0:
+        )
+        if len(found_users) == 0:
             print(colored("No user found!", "red", attrs=["bold"]))
             continue
+        found_users_uids = found_users[keyword]
 
         # 2. Query user database
         str_uids = ",".join("?" * len(found_users_uids))

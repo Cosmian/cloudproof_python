@@ -45,7 +45,7 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -56,7 +56,7 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
             chain_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -77,7 +77,7 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
         """Insert new key-value pairs in the Chain Table.
 
         Args:
-            chain_items (Dict[bytes, bytes])
+            chain_items (Dict[bytes, bytes]): uid -> value mapping to insert
         """
 
 
@@ -98,7 +98,7 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -109,7 +109,7 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             chain_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     def progress_callback(self, results: List[IndexedValue]) -> bool:
@@ -141,7 +141,7 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
 
         Returns:
-            Dict[str, List[IndexedValue]]: `Locations` found by `Keyword`
+            Dict[str, List[bytes]]: `Locations` found by `Keyword`
         """
         res_indexed_values = self.findex_core.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
@@ -181,7 +181,7 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
             entry_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -189,7 +189,7 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
         """Return all UIDs in the Entry Table.
 
         Returns:
-            Set[bytes]
+            Set[bytes]: uid set
         """
 
     @abstractmethod
@@ -200,7 +200,7 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
             chain_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -208,7 +208,7 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
         """Insert new key-value pairs in the Chain Table.
 
         Args:
-            chain_items (Dict[bytes, bytes])
+            chain_items (Dict[bytes, bytes]): uid -> value mapping to insert
         """
 
     @abstractmethod
@@ -216,7 +216,7 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
         """Insert new key-value pairs in the Entry Table.
 
         Args:
-            entries_items (Dict[bytes, bytes])
+            entries_items (Dict[bytes, bytes]): uid -> value mapping to insert
         """
 
     @abstractmethod
