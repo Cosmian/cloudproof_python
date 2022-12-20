@@ -23,19 +23,19 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
 
     def upsert(
         self,
-        indexed_value_to_keywords: Dict[IndexedValue, List[str]],
+        indexed_values_and_keywords: Dict[IndexedValue, List[str]],
         master_key: MasterKey,
         label: Label,
     ) -> None:
         """Upserts the given relations between `IndexedValue` and `Keyword` into Findex tables.
 
         Args:
-            indexed_value_to_keywords (Dict[bytes, List[str]]): map of `IndexedValue`
+            indexed_values_and_keywords (Dict[bytes, List[str]]): map of `IndexedValue`
                                                                 to a list of `Keyword`
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
         """
-        self.findex_core.upsert_wrapper(indexed_value_to_keywords, master_key, label)
+        self.findex_core.upsert_wrapper(indexed_values_and_keywords, master_key, label)
 
     @abstractmethod
     def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
