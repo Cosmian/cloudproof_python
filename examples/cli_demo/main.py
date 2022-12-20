@@ -159,24 +159,18 @@ if __name__ == "__main__":
         keyword = input("Enter a keyword: ")
 
         # 1. Findex search
-        found_users_locations = findex_interface.search(
+        found_users_uids = findex_interface.search(
             [keyword], findex_master_key, findex_label
-        )
-        if len(found_users_locations) == 0:
+        )[keyword]
+        if len(found_users_uids) == 0:
             print(colored("No user found!", "red", attrs=["bold"]))
             continue
 
-        found_users_uid = []
-        for user in found_users_locations[keyword]:
-            user_uid = user.get_location()
-            if user_uid:
-                found_users_uid.append(user_uid)
-
         # 2. Query user database
-        str_uids = ",".join("?" * len(found_users_uid))
+        str_uids = ",".join("?" * len(found_users_uids))
         cur = conn.execute(
             f"SELECT * FROM users WHERE id IN ({str_uids})",
-            found_users_uid,
+            found_users_uids,
         )
         encrypted_data = cur.fetchall()
 

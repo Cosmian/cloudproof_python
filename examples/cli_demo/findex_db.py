@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import sqlite3
-from cloudproof_py.findex import Findex, IndexedValue
+from cloudproof_py.findex import Findex
 
 from typing import Dict, List, Set, Tuple, Optional
 
@@ -40,7 +40,6 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
         """
         cur = self.conn.execute("SELECT uid FROM entry_table")
         values = cur.fetchall()
-
         return {value[0] for value in values}
 
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
@@ -134,7 +133,7 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
         )
 
-    def list_removed_locations(self, db_uids: List[bytes]) -> List[bytes]:
+    def list_removed_locations(self, locations: List[bytes]) -> List[bytes]:
         """Check whether uids still exist in the database
 
         Args:
@@ -144,19 +143,8 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
             List[bytes]: list of uids that were removed
         """
         res = []
-        for uid in db_uids:
+        for uid in locations:
             cursor = self.conn.execute("SELECT * FROM users WHERE id = ?", (uid,))
             if not cursor.fetchone():
                 res.append(uid)
         return res
-
-    def progress_callback(self, results: List[IndexedValue]) -> bool:
-        """Intermediate search results
-
-        Args:
-            results (List[IndexedValue]): new locations found
-
-        Returns:
-            bool: continue recursive search
-        """
-        return True

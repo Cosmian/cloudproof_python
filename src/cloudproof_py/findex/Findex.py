@@ -112,7 +112,6 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             Dict[bytes, bytes]
         """
 
-    @abstractmethod
     def progress_callback(self, results: List[IndexedValue]) -> bool:
         """Intermediate search results.
 
@@ -122,6 +121,7 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
         Returns:
             bool: continue recursive search
         """
+        return True
 
     def search(
         self,
@@ -130,8 +130,8 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
         label: Label,
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
-    ) -> Dict[str, List[IndexedValue]]:
-        """Recursively search Findex graphs for `IndexedValues` corresponding to the given `Keyword`.
+    ) -> Dict[str, List[bytes]]:
+        """Recursively search Findex graphs for `Locations` corresponding to the given `Keyword`.
 
         Args:
             keywords (List[str]): keywords to search using Findex
@@ -141,11 +141,23 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
 
         Returns:
-            Dict[str, List[IndexedValue]]: `IndexedValues` found by `Keyword`
+            Dict[str, List[IndexedValue]]: `Locations` found by `Keyword`
         """
-        return self.findex_core.search_wrapper(
+        res_indexed_values = self.findex_core.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
         )
+
+        # return only locations
+        res_locations: Dict[str, List[bytes]] = {}
+        for keyword, indexed_values in res_indexed_values.items():
+            locations = []
+            for indexed_value in indexed_values:
+                loc = indexed_value.get_location()
+                if loc:
+                    locations.append(loc)
+            res_locations[keyword] = locations
+
+        return res_locations
 
 
 class FindexCompact(FindexBase, metaclass=ABCMeta):

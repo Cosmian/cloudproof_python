@@ -155,7 +155,7 @@ class SQLiteBackend(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompa
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
         )
 
-    def list_removed_locations(self, db_uids: List[bytes]) -> List[bytes]:
+    def list_removed_locations(self, locations: List[bytes]) -> List[bytes]:
         """Check wether uids still exist in the database
 
         Args:
@@ -165,22 +165,11 @@ class SQLiteBackend(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompa
             List[bytes]: list of uids that were removed
         """
         res = []
-        for uid in db_uids:
+        for uid in locations:
             cursor = self.conn.execute("SELECT * FROM users WHERE id = ?", (uid,))
             if not cursor.fetchone():
                 res.append(uid)
         return res
-
-    def progress_callback(self, results: List[IndexedValue]) -> bool:
-        """Intermediate search results
-
-        Args:
-            results (List[IndexedValue]): new locations found
-
-        Returns:
-            bool: continue recursive search
-        """
-        return True
 
     # End findex trait implementation
 
