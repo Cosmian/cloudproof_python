@@ -20,7 +20,7 @@ def generate_auto_completion(
         encoding (str, optional): used to encode the string to bytes. Defaults to "utf-8".
 
     Returns:
-        Dict[IndexedValue, List[str]]: keyword - sub-word mapping to upsert in Findex.
+        Dict[IndexedValue, List[str]]: keyword -> sub-word mapping to upsert in Findex.
     """
     res = {}
     for word in keywords:

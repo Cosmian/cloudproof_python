@@ -1,19 +1,20 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
-class FindexUpsert(InternalFindex, metaclass=ABCMeta):
-    """Implement this class to use Findex Upsert API"""
+class FindexBase(metaclass=ABCMeta):
+    def __init__(self) -> None:
+        self.findex_core = InternalFindex()
 
-    def __new__(cls, *args, **kargs):
-        # allow constructor args without passing them to InternalFindex
-        return InternalFindex.__new__(cls)
+
+class FindexUpsert(FindexBase, metaclass=ABCMeta):
+    """Implement this class to use Findex Upsert API"""
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_upsert_callbacks(
+        self.findex_core.set_upsert_callbacks(
             self.fetch_entry_table,
             self.fetch_chain_table,
             self.upsert_entry_table,
@@ -22,31 +23,29 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
 
     def upsert(
         self,
-        dict_indexed_values: Dict[IndexedValue, List[str]],
+        indexed_values_and_keywords: Dict[IndexedValue, List[str]],
         master_key: MasterKey,
         label: Label,
     ) -> None:
-        """Upserts the given relations between `IndexedValue` and `KeyWord` into Findex tables.
+        """Upserts the given relations between `IndexedValue` and `Keyword` into Findex tables.
 
         Args:
-            dict_indexed_values (Dict[bytes, List[bytes]]): map of `IndexedValue`
-                                                            to a list of `Keyword`
+            indexed_values_and_keywords (Dict[bytes, List[str]]): map of `IndexedValue`
+                                                                to a list of `Keyword`
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
         """
-        self.upsert_wrapper(dict_indexed_values, master_key, label)
+        self.findex_core.upsert_wrapper(indexed_values_and_keywords, master_key, label)
 
     @abstractmethod
-    def fetch_entry_table(
-        self, entry_uids: Optional[List[bytes]] = None
-    ) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -57,7 +56,7 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
             chain_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -78,33 +77,28 @@ class FindexUpsert(InternalFindex, metaclass=ABCMeta):
         """Insert new key-value pairs in the Chain Table.
 
         Args:
-            chain_items (Dict[bytes, bytes])
+            chain_items (Dict[bytes, bytes]): uid -> value mapping to insert
         """
 
 
-class FindexSearch(InternalFindex, metaclass=ABCMeta):
+class FindexSearch(FindexBase, metaclass=ABCMeta):
     """Implement this class to use Findex Search API"""
-
-    def __new__(cls, *args, **kargs):
-        return InternalFindex.__new__(cls)
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_search_callbacks(
+        self.findex_core.set_search_callbacks(
             self.fetch_entry_table, self.fetch_chain_table, self.progress_callback
         )
 
     @abstractmethod
-    def fetch_entry_table(
-        self, entry_uids: Optional[List[bytes]] = None
-    ) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -115,10 +109,9 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
             chain_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
-    @abstractmethod
     def progress_callback(self, results: List[IndexedValue]) -> bool:
         """Intermediate search results.
 
@@ -128,6 +121,7 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
         Returns:
             bool: continue recursive search
         """
+        return True
 
     def search(
         self,
@@ -136,8 +130,8 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
         label: Label,
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
-    ) -> Dict[str, List[IndexedValue]]:
-        """Recursively search Findex graphs for `Location` corresponding to the given `KeyWord`.
+    ) -> Dict[str, List[bytes]]:
+        """Recursively search Findex graphs for `Locations` corresponding to the given `Keyword`.
 
         Args:
             keywords (List[str]): keywords to search using Findex
@@ -147,39 +141,55 @@ class FindexSearch(InternalFindex, metaclass=ABCMeta):
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
 
         Returns:
-            List[IndexedValue]: `IndexedValue` found for the given `Keyword`
+            Dict[str, List[bytes]]: `Locations` found by `Keyword`
         """
-        return self.search_wrapper(
+        res_indexed_values = self.findex_core.search_wrapper(
             keywords, master_key, label, max_result_per_keyword, max_depth
         )
 
+        # return only locations
+        res_locations: Dict[str, List[bytes]] = {}
+        for keyword, indexed_values in res_indexed_values.items():
+            locations = []
+            for indexed_value in indexed_values:
+                loc = indexed_value.get_location()
+                if loc:
+                    locations.append(loc)
+            res_locations[keyword] = locations
 
-class FindexCompact(InternalFindex, metaclass=ABCMeta):
+        return res_locations
+
+
+class FindexCompact(FindexBase, metaclass=ABCMeta):
     """Implement this class to use Findex Compact API"""
-
-    def __new__(cls, *args, **kargs):
-        return InternalFindex.__new__(cls)
 
     def __init__(self) -> None:
         super().__init__()
-        self.set_compact_callbacks(
+        self.findex_core.set_compact_callbacks(
             self.fetch_entry_table,
             self.fetch_chain_table,
             self.update_lines,
             self.list_removed_locations,
+            self.fetch_all_entry_table_uids,
         )
 
     @abstractmethod
-    def fetch_entry_table(
-        self, entry_uids: Optional[List[bytes]] = None
-    ) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
-            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+            entry_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
+        """
+
+    @abstractmethod
+    def fetch_all_entry_table_uids(self) -> Set[bytes]:
+        """Return all UIDs in the Entry Table.
+
+        Returns:
+            Set[bytes]: uid set
         """
 
     @abstractmethod
@@ -190,7 +200,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
             chain_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
 
     @abstractmethod
@@ -198,7 +208,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
         """Insert new key-value pairs in the Chain Table.
 
         Args:
-            chain_items (Dict[bytes, bytes])
+            chain_items (Dict[bytes, bytes]): uid -> value mapping to insert
         """
 
     @abstractmethod
@@ -206,7 +216,7 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
         """Insert new key-value pairs in the Entry Table.
 
         Args:
-            entries_items (Dict[bytes, bytes])
+            entries_items (Dict[bytes, bytes]): uid -> value mapping to insert
         """
 
     @abstractmethod
@@ -291,6 +301,6 @@ class FindexCompact(InternalFindex, metaclass=ABCMeta):
             new_master_key (MasterKey): newly generated key
             new_label (Label): newly generated label
         """
-        self.compact_wrapper(
+        self.findex_core.compact_wrapper(
             num_reindexing_before_full_set, master_key, new_master_key, new_label
         )

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import sqlite3
-from cloudproof_py.findex import Findex, IndexedValue
+from cloudproof_py.findex import Findex
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Set, Tuple, Optional
 
 
 class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
@@ -12,32 +12,35 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
         super().__init__()
         self.conn = db_conn
 
-    def fetch_entry_table(
-        self, entry_uids: Optional[List[bytes]] = None
-    ) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the entry table
 
         Args:
-            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+            entry_uids List[bytes]: uids to query. if None, return the entire table
 
         Returns:
             Dict[bytes, bytes]
         """
-        cur = self.conn.cursor()
-        if entry_uids:
-            str_uids = ",".join("?" * len(entry_uids))
-            cur.execute(
-                f"SELECT uid, value FROM entry_table WHERE uid IN ({str_uids})",
-                entry_uids,
-            )
-        else:
-            cur.execute("SELECT uid, value FROM entry_table")
-
+        str_uids = ",".join("?" * len(entry_uids))
+        cur = self.conn.execute(
+            f"SELECT uid, value FROM entry_table WHERE uid IN ({str_uids})",
+            entry_uids,
+        )
         values = cur.fetchall()
         output_dict = {}
         for value in values:
             output_dict[value[0]] = value[1]
         return output_dict
+
+    def fetch_all_entry_table_uids(self) -> Set[bytes]:
+        """Return all UIDs in the Entry Table.
+
+        Returns:
+            Set[bytes]
+        """
+        cur = self.conn.execute("SELECT uid FROM entry_table")
+        values = cur.fetchall()
+        return {value[0] for value in values}
 
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the chain table
@@ -130,7 +133,7 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
         )
 
-    def list_removed_locations(self, db_uids: List[bytes]) -> List[bytes]:
+    def list_removed_locations(self, locations: List[bytes]) -> List[bytes]:
         """Check whether uids still exist in the database
 
         Args:
@@ -140,19 +143,8 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
             List[bytes]: list of uids that were removed
         """
         res = []
-        for uid in db_uids:
+        for uid in locations:
             cursor = self.conn.execute("SELECT * FROM users WHERE id = ?", (uid,))
             if not cursor.fetchone():
                 res.append(uid)
         return res
-
-    def progress_callback(self, results: List[IndexedValue]) -> bool:
-        """Intermediate search results
-
-        Args:
-            results (List[IndexedValue]): new locations found
-
-        Returns:
-            bool: continue recursive search
-        """
-        return True
