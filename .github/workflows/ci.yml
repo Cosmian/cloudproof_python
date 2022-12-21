@@ -29,7 +29,7 @@ jobs:
         with:
           name: cloudproof_py_dist
           path: ./dist
-          retention-days: 60
+          retention-days: 1
 
   test:
     runs-on: ubuntu-latest

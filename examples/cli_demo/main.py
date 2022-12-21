@@ -64,7 +64,7 @@ if __name__ == "__main__":
 
     key_Bob = cc_interface.generate_user_secret_key(
         cc_master_key,
-        "Country::Spain && Department::HR",
+        "(Country::Spain || Country::Germany) && Department::HR",
         policy,
     )
 
@@ -121,7 +121,9 @@ if __name__ == "__main__":
 
     # Mapping of the users database UID to the corresponding keywords (firstname, lastname, etc)
     mapping_indexed_values_to_keywords = {
-        findex.IndexedValue.from_location(user_id): list(user.values())
+        findex.IndexedValue.from_location(user_id): [
+            keyword.lower() for keyword in user.values()
+        ]
         for user_id, user in zip(user_db_uids, users)
     }
     # Upsert keywords
@@ -129,10 +131,12 @@ if __name__ == "__main__":
         mapping_indexed_values_to_keywords, findex_master_key, findex_label
     )
     print("Findex: Done indexing", len(users), "users")
-
-    activate_auto_completion = input("Active search auto completion? [y/n] ") == "y"
+    print(
+        "Auto completion available: only type the 3 first letters of a word to get results"
+    )
+    activate_auto_completion = input("Activate search auto completion? [y/n] ") == "y"
     if activate_auto_completion:
-        keywords = [keyword for user in users for keyword in user.values()]
+        keywords = [keyword.lower() for user in users for keyword in user.values()]
         findex_interface.upsert(
             findex.utils.generate_auto_completion(keywords),
             findex_master_key,
@@ -144,7 +148,7 @@ if __name__ == "__main__":
     while True:
         print("\n Available user keys:")
         print("\t Alice: Country::France && Department::MKG")
-        print("\t Bob: Country::Spain && Department::HR")
+        print("\t Bob: (Country::Spain || Country::Germany) && Department::HR")
         print("\t Charlie: (Country::France || Country::Spain) && Department::SEC")
 
         input_user_key = ""
@@ -156,7 +160,7 @@ if __name__ == "__main__":
 
         print("\n You can now search the database for users by providing keywords")
         print("Examples of words to try: 'Martin', 'France', 'Kalia'")
-        keyword = input("Enter a keyword: ")
+        keyword = input("Enter a keyword: ").lower()
 
         # 1. Findex search
         found_users = findex_interface.search(
