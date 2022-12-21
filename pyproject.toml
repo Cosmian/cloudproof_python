@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=59"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+cloudproof_py = ["py.typed", "*.pyi"]
+
+[project]
+name = "cloudproof_py"
+version = "1.0.0"
+authors = [{ name = "Cosmian Tech", email = "tech@cosmian.com" }]
+description = "Python library for Cosmian Cloud Proof"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+dependencies = ["cover-crypt", "findex"]
+
+[project.urls]
+"Homepage" = "https://github.com/Cosmian/cloudproof_python"
+"Bug Tracker" = "https://github.com/Cosmian/cloudproof_python/issues"
