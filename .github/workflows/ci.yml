@@ -51,6 +51,7 @@ jobs:
           mypy src/ tests/
           mypy examples/cli_demo
           mypy examples/findex_upsert_search
+          mypy examples/cover_crypt
       - name: Run tests
         run: |
           python -m unittest tests/test*.py

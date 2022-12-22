@@ -5,10 +5,6 @@ from cloudproof_py.cover_crypt import Policy, PolicyAxis, Attribute, CoverCrypt
 
 class TestCoverCrypt(unittest.TestCase):
     def test_doc_example(self) -> None:
-        """
-        Creating Policy
-        """
-
         policy = Policy()
         policy.add_axis(
             PolicyAxis(
@@ -21,16 +17,8 @@ class TestCoverCrypt(unittest.TestCase):
             PolicyAxis("Department", ["FIN", "MKG", "HR"], hierarchical=False)
         )
 
-        """
-        Generating master keys
-        """
-
         CoverCryptInstance = CoverCrypt()
         master_private_key, public_key = CoverCryptInstance.generate_master_keys(policy)
-
-        """
-        Messages encryption
-        """
 
         protected_mkg_data = b"protected_mkg_message"
         protected_mkg_ciphertext = CoverCryptInstance.encrypt(
@@ -56,10 +44,6 @@ class TestCoverCrypt(unittest.TestCase):
             protected_fin_data,
         )
 
-        """
-        Generating user keys
-        """
-
         confidential_mkg_userKey = CoverCryptInstance.generate_user_secret_key(
             master_private_key,
             "Department::MKG && Security Level::Confidential",
@@ -72,18 +56,10 @@ class TestCoverCrypt(unittest.TestCase):
             policy,
         )
 
-        """
-        Decryption with the right access policy
-        """
-
         protected_mkg_plaintext, _ = CoverCryptInstance.decrypt(
             confidential_mkg_userKey, protected_mkg_ciphertext
         )
         self.assertEqual(protected_mkg_plaintext, protected_mkg_data)
-
-        """
-        Decryption without the right access will fail
-        """
 
         with self.assertRaises(Exception):
             # will throw
@@ -96,11 +72,6 @@ class TestCoverCrypt(unittest.TestCase):
             CoverCryptInstance.decrypt(
                 confidential_mkg_userKey, protected_fin_ciphertext
             )
-
-        """
-        User with Top Secret access can decrypt messages of all Security Level
-        within the right Department
-        """
 
         protected_mkg_plaintext2, _ = CoverCryptInstance.decrypt(
             topSecret_mkg_fin_userKey, protected_mkg_ciphertext
@@ -116,10 +87,6 @@ class TestCoverCrypt(unittest.TestCase):
             topSecret_mkg_fin_userKey, protected_fin_ciphertext
         )
         self.assertEqual(protected_fin_plaintext, protected_fin_data)
-
-        """
-        Rotating Attributes
-        """
 
         # make a copy of the current user key
         old_confidential_mkg_userKey = confidential_mkg_userKey.deep_copy()
@@ -139,10 +106,6 @@ class TestCoverCrypt(unittest.TestCase):
             keep_old_accesses=True,
         )
 
-        """
-        New confidential marketing message
-        """
-
         confidential_mkg_data = b"confidential_secret_mkg_message"
         confidential_mkg_ciphertext = CoverCryptInstance.encrypt(
             policy,
@@ -150,10 +113,6 @@ class TestCoverCrypt(unittest.TestCase):
             public_key,
             confidential_mkg_data,
         )
-
-        """
-        Decrypting the messages with the rekeyed key
-        """
 
         # decrypting the "old" `protected marketing` message
         old_protected_mkg_plaintext, _ = CoverCryptInstance.decrypt(
