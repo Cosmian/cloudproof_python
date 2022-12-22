@@ -2,7 +2,7 @@
 import sqlite3
 from cloudproof_py.findex import Findex
 
-from typing import Dict, List, Set, Tuple, Optional
+from typing import Dict, List, Set, Tuple
 
 
 class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
@@ -13,13 +13,13 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
         self.conn = db_conn
 
     def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
-        """Query the entry table
+        """Query the Entry Table.
 
         Args:
-            entry_uids List[bytes]: uids to query. if None, return the entire table
+            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]
+            Dict[bytes, bytes]: uid -> value mapping
         """
         str_uids = ",".join("?" * len(entry_uids))
         cur = self.conn.execute(
@@ -89,17 +89,6 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
 
         return rejected_lines
 
-    def insert_entry_table(self, entries_items: Dict[bytes, bytes]) -> None:
-        """Insert new key-value pairs in the entry table
-
-        Args:
-            entry_items (Dict[bytes, bytes])
-        """
-        sql_insert_entry = """INSERT INTO entry_table(uid,value) VALUES(?,?)"""
-        self.conn.executemany(
-            sql_insert_entry, entries_items.items()
-        )  # batch insertions
-
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
         """Insert new key-value pairs in the chain table
 
@@ -107,44 +96,4 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
             chain_items (Dict[bytes, bytes])
         """
         sql_insert_chain = """INSERT INTO chain_table(uid,value) VALUES(?,?)"""
-        self.conn.executemany(sql_insert_chain, chain_items.items())  # batch insertions
-
-    def remove_entry_table(self, entry_uids: Optional[List[bytes]] = None) -> None:
-        """Remove entries from entry table
-
-        Args:
-            entry_uids (List[bytes], optional): uid of entries to delete.
-            if None, delete all entries
-        """
-        if entry_uids:
-            self.conn.executemany(
-                "DELETE FROM entry_table WHERE uid = ?", [(uid,) for uid in entry_uids]
-            )
-        else:
-            self.conn.execute("DELETE FROM entry_table")
-
-    def remove_chain_table(self, chain_uids: List[bytes]) -> None:
-        """Remove entries from chain table
-
-        Args:
-            chain_uids (List[bytes]): uids to remove from the chain table
-        """
-        self.conn.executemany(
-            "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
-        )
-
-    def list_removed_locations(self, locations: List[bytes]) -> List[bytes]:
-        """Check whether uids still exist in the database
-
-        Args:
-            db_uids (List[bytes]): uids to check
-
-        Returns:
-            List[bytes]: list of uids that were removed
-        """
-        res = []
-        for uid in locations:
-            cursor = self.conn.execute("SELECT * FROM users WHERE id = ?", (uid,))
-            if not cursor.fetchone():
-                res.append(uid)
-        return res
+        self.conn.executemany(sql_insert_chain, chain_items.items())
