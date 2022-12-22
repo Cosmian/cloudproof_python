@@ -24,7 +24,8 @@ To install the current release:
 pip install cloudproof_py
 ```
 
-Please [check the online documentation](https://docs.cosmian.com/cloudproof_encryption/use_cases_benefits/) for details on using the CloudProof APIs.
+Code examples are available in [./examples](./examples) to get you started.
+Please [check the online documentation](https://docs.cosmian.com/cloudproof_encryption/use_cases_benefits/) for more details on using the CloudProof APIs.
 
 ## Demo
 

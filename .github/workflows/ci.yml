@@ -15,10 +15,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install mypy flake8 types-termcolor==1.1.6
-      - name: Type-check
-        run: |
-          mypy src/ tests/ examples/
+          pip install flake8
       - name: Linter
         run: |
           flake8 --max-line-length=100
@@ -47,7 +44,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install mypy types-termcolor==1.1.6
           pip install cloudproof_py*.whl
+      - name: Type-check
+        run: |
+          mypy src/ tests/
+          mypy examples/cli_demo
+          mypy examples/findex_upsert_search
       - name: Run tests
         run: |
           python -m unittest tests/test*.py
