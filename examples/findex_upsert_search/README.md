@@ -8,5 +8,6 @@ This example will show you:
 ## Run
 
 ```bash
+pip install -r requirements.txt
 python main.py
 ```

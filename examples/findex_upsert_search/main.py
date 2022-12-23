@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from findex_dict import FindexDict
+from findex_redis import FindexRedis
 from cloudproof_py import findex
+from typing import Union
 
 # Simple database containing the firstname and lastname of each user.
 # Each line has a corresponding UID: 1, 2 or 3.
@@ -9,6 +11,8 @@ data = {
     "2": ["Martial", "Wilkins"],
     "3": ["John", "Shepherd"],
 }
+
+backend = "Dict"
 
 if __name__ == "__main__":
     print("Database to index:", data)
@@ -20,7 +24,11 @@ if __name__ == "__main__":
     label = findex.Label.random()
 
     # Instance the class implementing the required callbacks
-    findex_interface = FindexDict()
+    findex_interface: Union[FindexRedis, FindexDict]
+    if backend == "Redis":
+        findex_interface = FindexRedis()
+    else:
+        findex_interface = FindexDict()
 
     # Create the index
     indexed_values_and_keywords = {}
@@ -32,15 +40,6 @@ if __name__ == "__main__":
 
     # Upsert in Findex
     findex_interface.upsert(indexed_values_and_keywords, master_key, label)
-
-    print(
-        "Length of the encrypted entry table (number of unique keywords):",
-        len(findex_interface.entry_table),
-    )
-    print(
-        "Length of the encrypted chain table (number of unique keywords):",
-        len(findex_interface.chain_table),
-    )
 
     # Search
     keywords_to_search = ["Shepherd", "John"]
