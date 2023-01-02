@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 from findex_dict import FindexDict
 from findex_redis import FindexRedis
+from findex_sqlite import FindexSQLite
 from cloudproof_py import findex
 from typing import Union
+import argparse
 
 # Simple database containing the firstname and lastname of each user.
 # Each line has a corresponding UID: 1, 2 or 3.
@@ -12,9 +14,8 @@ data = {
     "3": ["John", "Shepherd"],
 }
 
-backend = "Dict"
 
-if __name__ == "__main__":
+def main(backend: str = "Dict"):
     print("Database to index:", data)
 
     # Initialize a symmetric key
@@ -24,9 +25,11 @@ if __name__ == "__main__":
     label = findex.Label.random()
 
     # Instance the class implementing the required callbacks
-    findex_interface: Union[FindexRedis, FindexDict]
+    findex_interface: Union[findex.Findex.FindexUpsert, findex.Findex.FindexSearch]
     if backend == "Redis":
         findex_interface = FindexRedis()
+    elif backend == "SQLite":
+        findex_interface = FindexSQLite()
     else:
         findex_interface = FindexDict()
 
@@ -83,3 +86,30 @@ if __name__ == "__main__":
 
     # `Mar` points to both Martin's and Martial's locations.
     # `Wil` only points to Wilkins' location.
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Findex example.")
+    parser.add_argument(
+        "--redis", action="store_true", help="Use Redis to store Findex indexing tables"
+    )
+    parser.add_argument(
+        "--sqlite",
+        action="store_true",
+        help="Use SQLite to store Findex indexing tables",
+    )
+
+    args = parser.parse_args()
+
+    if args.redis:
+        print(
+            "Using Redis backend (be sure to have a running Redis instance on your computer)"
+        )
+        main("Redis")
+    elif args.sqlite:
+        print("Using in-memory SQLite")
+        main("SQLite")
+    else:
+        print("Using in-memory dictionnaries")
+        main("Dict")

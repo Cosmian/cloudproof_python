@@ -6,7 +6,7 @@ import redis
 
 
 class FindexRedis(Findex.FindexUpsert, Findex.FindexSearch):
-    """Implement Findex callbacks using Redis"""
+    """Implement Findex callbacks using Redis."""
 
     def __init__(self) -> None:
         super().__init__()

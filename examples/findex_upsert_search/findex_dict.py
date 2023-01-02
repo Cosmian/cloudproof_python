@@ -5,7 +5,7 @@ from typing import Dict, List, Tuple
 
 
 class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
-    """Implement Findex callbacks using dictionaries"""
+    """Implement Findex callbacks using dictionaries."""
 
     def __init__(self) -> None:
         super().__init__()

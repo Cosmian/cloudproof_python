@@ -6,7 +6,7 @@ from typing import Dict, List, Set, Tuple
 
 
 class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
-    """Implementation of Findex traits for a SQLite backend"""
+    """Implement Findex callbacks using SQLite."""
 
     def __init__(self, db_conn: sqlite3.Connection) -> None:
         super().__init__()
