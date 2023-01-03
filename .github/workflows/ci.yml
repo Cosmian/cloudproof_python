@@ -44,7 +44,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install mypy types-termcolor==1.1.6
+          pip install mypy types-termcolor>=1.1 types_redis>=4.3
           pip install cloudproof_py*.whl
       - name: Type-check
         run: |

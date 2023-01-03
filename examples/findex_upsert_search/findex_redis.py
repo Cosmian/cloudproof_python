@@ -2,16 +2,18 @@
 from cloudproof_py.findex import Findex
 
 from typing import Dict, List, Tuple
+import redis
 
 
-class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
-    """Implement Findex callbacks using dictionaries."""
+class FindexRedis(Findex.FindexUpsert, Findex.FindexSearch):
+    """Implement Findex callbacks using Redis."""
 
     def __init__(self) -> None:
         super().__init__()
-        # These tables are encrypted and can be stored on a remote server like Redis
-        self.entry_table: Dict[bytes, bytes] = {}
-        self.chain_table: Dict[bytes, bytes] = {}
+        self.redis = redis.Redis()
+
+        self.prefix_entry = b"entry:"
+        self.prefix_chain = b"chain:"
 
     # Implement callback functions
     def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
@@ -25,8 +27,9 @@ class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
         """
         res = {}
         for uid in entry_uids:
-            if uid in self.entry_table:
-                res[uid] = self.entry_table[uid]
+            existing_value = self.redis.get(self.prefix_entry + uid)
+            if existing_value:
+                res[uid] = existing_value
         return res
 
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
@@ -40,8 +43,9 @@ class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
         """
         res = {}
         for uid in chain_uids:
-            if uid in self.chain_table:
-                res[uid] = self.chain_table[uid]
+            existing_value = self.redis.get(self.prefix_chain + uid)
+            if existing_value:
+                res[uid] = existing_value
         return res
 
     def upsert_entry_table(
@@ -58,13 +62,14 @@ class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
         """
         rejected_lines = {}
         for uid, (old_val, new_val) in entry_updates.items():
-            if uid in self.entry_table:
-                if self.entry_table[uid] == old_val:
-                    self.entry_table[uid] = new_val
+            existing_value = self.redis.get(self.prefix_entry + uid)
+            if existing_value:
+                if existing_value == old_val:
+                    self.redis.set(self.prefix_entry + uid, new_val)
                 else:
-                    rejected_lines[uid] = self.entry_table[uid]
+                    rejected_lines[uid] = existing_value
             elif not old_val:
-                self.entry_table[uid] = new_val
+                self.redis.set(self.prefix_entry + uid, new_val)
             else:
                 raise Exception("Line got deleted in Entry Table")
 
@@ -77,6 +82,6 @@ class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
             chain_items (Dict[bytes, bytes]): uid -> value mapping to insert
         """
         for uid, value in chain_items.items():
-            if uid in self.chain_table:
+            if self.redis.exists(self.prefix_chain + uid):
                 raise KeyError("Conflict in Chain Table for UID: {uid}")
-            self.chain_table[uid] = value
+            self.redis.set(self.prefix_chain + uid, value)

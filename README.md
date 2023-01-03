@@ -36,7 +36,7 @@ Users data from `./examples/cli_demo/data.json` are encrypted using CoverCrypt a
 Try the demo:
 
 ```sh
-scripts/run_demo.sh
+examples/cli_demo/run_demo.sh
 ```
 
 ## Building and testing
@@ -44,25 +44,24 @@ scripts/run_demo.sh
 To build from source:
 
 ```sh
-pip install -r requirements.txt
 scripts/build.sh [-i]
 ```
 
-**Note**: add `-i` to install after build
+**Note**: add `-i` to install after build.
 
 To build and run the tests:
 
 ```sh
-pip install -r requirements.txt
 scripts/build.sh -it
 ```
 
 To build the documentation:
 
 ```sh
-pip install -r docs/requirements.txt
 scripts/build.sh -d
 ```
+
+The generated documentation will be in `./docs/_build/html`.
 
 ## Versions Correspondence
 

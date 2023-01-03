@@ -8,9 +8,23 @@ from typing import Dict, List, Set, Tuple
 class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
     """Implement Findex callbacks using SQLite."""
 
-    def __init__(self, db_conn: sqlite3.Connection) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.conn = db_conn
+        self.conn = sqlite3.connect(":memory:")
+        # Creating index tables required by Findex
+        self.conn.execute(
+            """CREATE TABLE IF NOT EXISTS entry_table (
+                                uid BLOB PRIMARY KEY,
+                                value BLOB NOT NULL
+                            );"""
+        )
+
+        self.conn.execute(
+            """CREATE TABLE IF NOT EXISTS chain_table (
+                                uid BLOB PRIMARY KEY,
+                                value BLOB NOT NULL
+                            );"""
+        )
 
     def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
