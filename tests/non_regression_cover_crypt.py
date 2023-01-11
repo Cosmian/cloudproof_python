@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 import json
+from base64 import b64encode, b64decode
+from typing import Union
+import os
+import argparse
+
 from cloudproof_py.cover_crypt import (
     Policy,
     PolicyAxis,
     CoverCrypt,
     MasterSecretKey,
     PublicKey,
+    UserSecretKey,
 )
-from base64 import b64encode
-from typing import Union
 
 
 def base64_str(input: Union[str, bytes], encoding="utf-8") -> str:
@@ -146,9 +150,133 @@ def generate_non_regression_vector():
     return non_regression_vector
 
 
-if __name__ == "__main__":
+def write_non_regression_vector(
+    dest_path: str = "tests/data/export/non_regression_vector.json",
+) -> None:
     vector = generate_non_regression_vector()
-    with open(
-        "tests/data/cover_crypt/non_regression/non_regression_test_vector.json", "w"
-    ) as file:
+    with open(dest_path, "w") as file:
         json.dump(vector, file, indent=2)
+
+
+def test_decrypt(instance: CoverCrypt, ciphertext: dict, key: dict):
+    user_key = UserSecretKey.from_bytes(b64decode(key["key"]))
+
+    plaintext, header = instance.decrypt(
+        user_key,
+        b64decode(ciphertext["ciphertext"]),
+        b64decode(ciphertext["authentication_data"]),
+    )
+
+    assert plaintext == b64decode(ciphertext["plaintext"])
+    assert header == b64decode(ciphertext["header_metadata"])
+
+
+def test_non_regression_vector(vector: dict) -> None:
+    instance = CoverCrypt()
+
+    #
+    # Import policy and master keys
+    #
+    Policy.from_json(b64decode(vector["policy"]).decode("utf-8"))
+    MasterSecretKey.from_bytes(b64decode(vector["master_secret_key"]))
+    PublicKey.from_bytes(b64decode(vector["public_key"]))
+
+    #
+    # Decrypt with top secret fin key
+    #
+    test_decrypt(
+        instance, vector["low_secret_fin_test_vector"], vector["top_secret_fin_key"]
+    )
+
+    try:
+        test_decrypt(
+            instance, vector["low_secret_mkg_test_vector"], vector["top_secret_fin_key"]
+        )
+        print("ERROR: Should not be able to decrypt")
+        exit(1)
+    except Exception:
+        pass  # failing expected
+
+    try:
+        test_decrypt(
+            instance, vector["top_secret_mkg_test_vector"], vector["top_secret_fin_key"]
+        )
+        print("ERROR: Should not be able to decrypt")
+        exit(1)
+    except Exception:
+        pass  # failing expected
+
+    #
+    # Decrypt with top secret mkg fin key
+    #
+    test_decrypt(
+        instance, vector["low_secret_fin_test_vector"], vector["top_secret_mkg_fin_key"]
+    )
+    test_decrypt(
+        instance, vector["low_secret_mkg_test_vector"], vector["top_secret_mkg_fin_key"]
+    )
+    test_decrypt(
+        instance, vector["top_secret_mkg_test_vector"], vector["top_secret_mkg_fin_key"]
+    )
+
+    #
+    # Decrypt with medium secret mkg key
+    #
+    try:
+        test_decrypt(
+            instance,
+            vector["low_secret_fin_test_vector"],
+            vector["medium_secret_mkg_key"],
+        )
+        print("ERROR: Should not be able to decrypt")
+        exit(1)
+    except Exception:
+        pass  # failing expected
+
+    test_decrypt(
+        instance, vector["low_secret_mkg_test_vector"], vector["medium_secret_mkg_key"]
+    )
+
+    try:
+        test_decrypt(
+            instance,
+            vector["top_secret_mkg_test_vector"],
+            vector["medium_secret_mkg_key"],
+        )
+        print("ERROR: Should not be able to decrypt")
+        exit(1)
+    except Exception:
+        pass  # failing expected
+
+
+def read_test_non_regression_vectors(folder: str = "tests/data/cover_crypt/"):
+    for filename in os.listdir(folder):
+        if filename[-4:] == "json":
+            with open(os.path.join(folder, filename)) as json_file:
+                non_regression_vector = json.load(json_file)
+                test_non_regression_vector(non_regression_vector)
+            print(filename, "successfully tested")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Non Regression Tests for CloudProof Python."
+    )
+    parser.add_argument(
+        "--write", action="store_true", help="Write a new test vector on disk"
+    )
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="Check all test vectors in tests/data/cover_crypt/non_regression",
+    )
+
+    args = parser.parse_args()
+
+    if args.write:
+        write_non_regression_vector()
+    if args.test:
+        read_test_non_regression_vectors()
+
+    elif not args.write and not args.test:
+        parser.print_help()
