@@ -130,6 +130,7 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
         label: Label,
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
+        fetch_chains_batch_size: int = 0,
     ) -> Dict[str, List[bytes]]:
         """Recursively search Findex graphs for `Locations` corresponding to the given `Keyword`.
 
@@ -139,12 +140,18 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             label (Label): public label used in keyword hashing
             max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
+            fetch_chains_batch_size (int, optional): batch size during fetch chain
 
         Returns:
             Dict[str, List[bytes]]: `Locations` found by `Keyword`
         """
         res_indexed_values = self.findex_core.search_wrapper(
-            keywords, master_key, label, max_result_per_keyword, max_depth
+            keywords,
+            master_key,
+            label,
+            max_result_per_keyword,
+            max_depth,
+            fetch_chains_batch_size,
         )
 
         # return only locations
