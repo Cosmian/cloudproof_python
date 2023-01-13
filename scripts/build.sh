@@ -10,6 +10,7 @@ while getopts "hitd" opt; do
       echo "Args:"
       echo "-i  install"
       echo "-t  run tests"
+      echo "-d  make doc"
       exit 0
       ;;
     i)  install=1
@@ -21,6 +22,9 @@ while getopts "hitd" opt; do
   esac
 done
 
+cd "$(dirname "$0")/.."
+# Install requirements
+pip install -r requirements.txt
 # Build package
 python3 -m build
 # Optional: automatic install
@@ -28,4 +32,5 @@ python3 -m build
 # Optional: run tests
 [ $test -gt 0 ] && python3 -m unittest tests/test*.py
 # Optional: make doc
-[ $doc -gt 0 ] && python3 scripts/extract_lib_types.py && cd docs && make html
+[ $doc -gt 0 ] && python3 scripts/extract_lib_types.py && cd docs \
+&& pip install -r requirements.txt && make html
