@@ -71,4 +71,4 @@ This table shows the minimum version correspondence between the various componen
 
 | `cloudproof_py` | CoverCrypt | Findex |
 | --------------- | ---------- | ------ |
-| 1.0.0           | 8.0.1      | 1.0.1  |
+| >=1.0.0         | 8.0.1      | 1.0.1  |
