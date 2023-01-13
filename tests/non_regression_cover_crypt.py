@@ -249,10 +249,12 @@ def test_non_regression_vector(vector: dict) -> None:
         pass  # failing expected
 
 
-def read_test_non_regression_vectors(folder: str = "tests/data/cover_crypt/"):
-    for filename in os.listdir(folder):
+def read_test_non_regression_vectors(
+    test_folder: str = "tests/data/cover_crypt/non_regression",
+):
+    for filename in os.listdir(test_folder):
         if filename[-4:] == "json":
-            with open(os.path.join(folder, filename)) as json_file:
+            with open(os.path.join(test_folder, filename)) as json_file:
                 non_regression_vector = json.load(json_file)
                 test_non_regression_vector(non_regression_vector)
             print(filename, "successfully tested")

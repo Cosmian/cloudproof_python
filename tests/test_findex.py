@@ -4,6 +4,9 @@ from cloudproof_py.findex import Findex, IndexedValue, MasterKey, Label
 from cloudproof_py.findex.utils import generate_auto_completion
 from typing import Dict, List, Optional, Set, Tuple
 import unittest
+import json
+from base64 import b64decode
+import os
 
 
 def create_table(conn, create_table_sql):
@@ -31,7 +34,7 @@ sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
                                         );"""
 
 
-class SQLiteBackend(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompact):
+class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompact):
     # Start implementing Findex methods
 
     def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
@@ -173,14 +176,11 @@ class SQLiteBackend(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompa
 
     # End findex trait implementation
 
-    def __init__(self) -> None:
+    def __init__(self, conn: sqlite3.Connection) -> None:
         super().__init__()
 
         # Create database
-        self.conn = sqlite3.connect(":memory:")
-        create_table(self.conn, sql_create_users_table)
-        create_table(self.conn, sql_create_entry_table)
-        create_table(self.conn, sql_create_chain_table)
+        self.conn = conn
 
     def insert_users(self, new_users: Dict[bytes, List[str]]) -> None:
         flat_entries = [(id, *val) for id, val in new_users.items()]
@@ -199,8 +199,13 @@ class SQLiteBackend(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompa
 
 class TestFindexSQLite(unittest.TestCase):
     def setUp(self) -> None:
+        # Init db tables
+        conn = sqlite3.connect(":memory:")
+        create_table(conn, sql_create_users_table)
+        create_table(conn, sql_create_entry_table)
+        create_table(conn, sql_create_chain_table)
         # Init Findex objects
-        self.db_server = SQLiteBackend()
+        self.interface = FindexSQLite(conn)
         self.mk = MasterKey.random()
         self.label = Label.random()
 
@@ -209,7 +214,7 @@ class TestFindexSQLite(unittest.TestCase):
             b"2": ["Martial", "Wilkins"],
             b"3": ["John", "Sheperd"],
         }
-        self.db_server.insert_users(self.users)
+        self.interface.insert_users(self.users)
 
     def test_sqlite_upsert_graph(self) -> None:
         # Simple insertion
@@ -217,27 +222,27 @@ class TestFindexSQLite(unittest.TestCase):
         indexed_values_and_keywords = {
             IndexedValue.from_location(key): value for key, value in self.users.items()
         }
-        self.db_server.upsert(indexed_values_and_keywords, self.mk, self.label)
+        self.interface.upsert(indexed_values_and_keywords, self.mk, self.label)
 
-        res = self.db_server.search(["Sheperd"], self.mk, self.label)
+        res = self.interface.search(["Sheperd"], self.mk, self.label)
         self.assertEqual(len(res["Sheperd"]), 2)
-        self.assertEqual(self.db_server.get_num_lines("entry_table"), 5)
-        self.assertEqual(self.db_server.get_num_lines("chain_table"), 5)
+        self.assertEqual(self.interface.get_num_lines("entry_table"), 5)
+        self.assertEqual(self.interface.get_num_lines("chain_table"), 5)
 
         # Generate and upsert graph
 
         keywords_list = [item for sublist in self.users.values() for item in sublist]
         graph = generate_auto_completion(keywords_list)
-        self.db_server.upsert(graph, self.mk, self.label)
+        self.interface.upsert(graph, self.mk, self.label)
 
-        self.assertEqual(self.db_server.get_num_lines("entry_table"), 18)
-        self.assertEqual(self.db_server.get_num_lines("chain_table"), 18)
+        self.assertEqual(self.interface.get_num_lines("entry_table"), 18)
+        self.assertEqual(self.interface.get_num_lines("chain_table"), 18)
 
-        res = self.db_server.search(["Mar"], self.mk, self.label)
+        res = self.interface.search(["Mar"], self.mk, self.label)
         # 2 names starting with Mar
         self.assertEqual(len(res["Mar"]), 2)
 
-        res = self.db_server.search(["Mar", "She"], self.mk, self.label)
+        res = self.interface.search(["Mar", "She"], self.mk, self.label)
         # all names starting with Mar or She
         self.assertEqual(len(res["Mar"]), 2)
         self.assertEqual(len(res["She"]), 2)
@@ -246,25 +251,98 @@ class TestFindexSQLite(unittest.TestCase):
         indexed_values_and_keywords = {
             IndexedValue.from_location(key): value for key, value in self.users.items()
         }
-        self.db_server.upsert(indexed_values_and_keywords, self.mk, self.label)
+        self.interface.upsert(indexed_values_and_keywords, self.mk, self.label)
 
         # Remove one line in the database before compacting
-        self.db_server.remove_users([b"1"])
+        self.interface.remove_users([b"1"])
         new_label = Label.random()
         new_mk = MasterKey.random()
-        self.db_server.compact(1, self.mk, new_mk, new_label)
+        self.interface.compact(1, self.mk, new_mk, new_label)
 
         # only one result left for `Sheperd`
-        res = self.db_server.search(["Sheperd"], new_mk, new_label)
+        res = self.interface.search(["Sheperd"], new_mk, new_label)
         self.assertEqual(len(res), 1)
 
         # searching with old label will fail
-        res = self.db_server.search(["Sheperd"], new_mk, self.label)
+        res = self.interface.search(["Sheperd"], new_mk, self.label)
         self.assertEqual(len(res), 0)
 
         # searching with old key will fail
-        res = self.db_server.search(["Sheperd"], self.mk, new_label)
+        res = self.interface.search(["Sheperd"], self.mk, new_label)
         self.assertEqual(len(res), 0)
+
+
+class TestFindexNonRegressionTest(unittest.TestCase):
+    def setUp(self) -> None:
+        # Init Findex objects
+        self.mk = MasterKey.from_bytes(b64decode("6hb1TznoNQFvCWisGWajkA=="))
+        self.label = Label.from_bytes(b"Some Label")
+
+        with open("./tests/data/users.json") as f:
+            self.users = json.load(f)
+
+    def test_create_non_regression_file(self) -> None:
+        # Create DB tables
+        conn = sqlite3.connect("./tests/data/export/sqlite.db")
+        conn.execute("DROP TABLE IF EXISTS entry_table")
+        conn.execute("DROP TABLE IF EXISTS chain_table")
+        create_table(conn, sql_create_entry_table)
+        create_table(conn, sql_create_chain_table)
+        conn.commit()
+
+        self.interface = FindexSQLite(conn)
+
+        # Create indexed entries for users and upsert them
+        new_indexed_entries = {
+            IndexedValue.from_location(user["id"].encode("utf-8")): [
+                str(user[k]) for k in list(user.keys())[1:]
+            ]
+            for user in self.users
+        }
+        self.interface.upsert(new_indexed_entries, self.mk, self.label)
+        conn.commit()
+
+        # Check the insertion is successful
+        res = self.interface.search(["France"], self.mk, self.label)
+        self.assertEqual(len(res["France"]), 30)
+
+        conn.close()
+
+    def verify(self, db_file: str) -> None:
+        conn = sqlite3.connect(db_file)
+        self.interface = FindexSQLite(conn)
+
+        # Verify search results
+        res = self.interface.search(["France"], self.mk, self.label)
+        self.assertEqual(len(res["France"]), 30)
+
+        # Upsert a single user
+        new_user_entry = {
+            IndexedValue.from_location(b"10000"): [
+                "another first name",
+                "another last name",
+                "another phone",
+                "another email",
+                "France",
+                "another region",
+                "another employee number",
+                "confidential",
+            ]
+        }
+        self.interface.upsert(new_user_entry, self.mk, self.label)
+
+        # Another search
+        res = self.interface.search(["France"], self.mk, self.label)
+        self.assertEqual(len(res["France"]), 31)
+
+        conn.close()
+
+    def test_check_non_regression_files(self) -> None:
+        test_folder = "./tests/data/findex/non_regression/"
+        for filename in os.listdir(test_folder):
+            if filename[-2:] == "db":
+                self.verify(os.path.join(test_folder, filename))
+                print(filename, "successfully tested")
 
 
 if __name__ == "__main__":
