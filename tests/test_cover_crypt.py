@@ -243,8 +243,10 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(protected_fin_plaintext, protected_fin_data)
 
         # make a copy of the current user key
-        old_confidential_mkg_user_key = await self.client.retrieve_cover_crypt_user_key(
-            confidential_mkg_user_uid
+        old_confidential_mkg_user_key = (
+            await self.client.retrieve_cover_crypt_user_decryption_key(
+                confidential_mkg_user_uid
+            )
         )
 
         # rotate MKG attribute
@@ -274,9 +276,9 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(new_confidential_mkg_plaintext, confidential_mkg_data)
 
-        # Importing  NON rekeyed key
+        # Importing NON rekeyed key
         old_confidential_mkg_user_uid = (
-            await self.client.import_cover_crypt_user_key_request(
+            await self.client.import_cover_crypt_user_decryption_key_request(
                 old_confidential_mkg_user_key.to_bytes(),
                 False,
                 self.privkey_uid,
@@ -318,8 +320,10 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         )
 
         # Retrieve user key
-        confidential_mkg_user_key = await self.client.retrieve_cover_crypt_user_key(
-            confidential_mkg_user_uid
+        confidential_mkg_user_key = (
+            await self.client.retrieve_cover_crypt_user_decryption_key(
+                confidential_mkg_user_uid
+            )
         )
         self.assertIsInstance(confidential_mkg_user_key, UserSecretKey)
 

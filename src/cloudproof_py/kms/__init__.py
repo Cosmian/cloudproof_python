@@ -129,7 +129,7 @@ class KmsClient(InternalKmsClient):
         object = await super().get_object(master_secret_key_identifier)
         return MasterSecretKey.from_bytes(object.key_block())
 
-    async def retrieve_cover_crypt_user_key(
+    async def retrieve_cover_crypt_user_decryption_key(
         self, user_key_identifier: str
     ) -> UserSecretKey:
         """Fetch a CoverCrypt Private User key.
