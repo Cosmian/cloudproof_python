@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from typing import Tuple, Union, List, Optional
-from asyncio import Future
 from cosmian_kms import KmsObject, KmsClient as InternalKmsClient
 from cosmian_cover_crypt import (
     Policy,
@@ -12,9 +11,9 @@ from cosmian_cover_crypt import (
 
 
 class KmsClient(InternalKmsClient):
-    def create_cover_crypt_master_key_pair(
+    async def create_cover_crypt_master_key_pair(
         self, policy: Union[Policy, str]
-    ) -> Future[Tuple[str, str]]:
+    ) -> Tuple[str, str]:
         """Generate the master authority keys for supplied Policy.
 
         Args:
@@ -24,12 +23,12 @@ class KmsClient(InternalKmsClient):
             Tuple[str, str]: (Public key UID, Master secret key UID)
         """
         if isinstance(policy, Policy):
-            return super().create_cover_crypt_master_key_pair(policy.to_json())
-        return super().create_cover_crypt_master_key_pair(policy)
+            return await super().create_cover_crypt_master_key_pair(policy.to_json())
+        return await super().create_cover_crypt_master_key_pair(policy)
 
-    def rotate_cover_crypt_attributes(
+    async def rotate_cover_crypt_attributes(
         self, master_secret_key_identifier: str, attributes: List[Union[Attribute, str]]
-    ) -> Future[Tuple[str, str]]:
+    ) -> Tuple[str, str]:
         """Rotate the given policy attributes. This will rekey in the KMS:
             - the Master Keys
             - all User Decryption Keys that contain one of these attributes in their policy.
@@ -41,7 +40,7 @@ class KmsClient(InternalKmsClient):
         Returns:
             Tuple[str, str]: (Public key UID, Master secret key UID)
         """
-        return super().rotate_cover_crypt_attributes(
+        return await super().rotate_cover_crypt_attributes(
             master_secret_key_identifier,
             [
                 attr.to_string() if isinstance(attr, Attribute) else attr

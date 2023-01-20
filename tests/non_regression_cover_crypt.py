@@ -72,17 +72,21 @@ def generate_non_regression_vector():
         PolicyAxis(
             "Security Level",
             [
-                "Protected",
-                "Low Secret",
-                "Medium Secret",
-                "High Secret",
-                "Top Secret",
+                ("Protected", False),
+                ("Low Secret", False),
+                ("Medium Secret", False),
+                ("High Secret", False),
+                ("Top Secret", False),
             ],
             hierarchical=True,
         )
     )
     policy.add_axis(
-        PolicyAxis("Department", ["R&D", "HR", "MKG", "FIN"], hierarchical=False)
+        PolicyAxis(
+            "Department",
+            [("R&D", False), ("HR", False), ("MKG", False), ("FIN", False)],
+            hierarchical=False,
+        )
     )
     instance = CoverCrypt()
 

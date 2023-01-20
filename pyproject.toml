@@ -17,7 +17,7 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
 ]
-dependencies = ["cover-crypt >= 8.0.1, < 9.0.0", "findex >= 2.0.0, < 3.0.0"]
+dependencies = ["cover-crypt >= 8.0.1, < 10.0.0", "findex >= 2.0.0, < 3.0.0", "cosmian-kms >= 4.1.0, < 5.0.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/Cosmian/cloudproof_python"

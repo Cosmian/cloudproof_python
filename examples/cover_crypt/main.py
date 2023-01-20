@@ -13,11 +13,17 @@ async def main(use_kms: bool = True):
     policy.add_axis(
         PolicyAxis(
             "Security Level",
-            ["Protected", "Confidential", "Top Secret"],
+            [("Protected", False), ("Confidential", False), ("Top Secret", False)],
             hierarchical=True,
         )
     )
-    policy.add_axis(PolicyAxis("Department", ["FIN", "MKG", "HR"], hierarchical=False))
+    policy.add_axis(
+        PolicyAxis(
+            "Department",
+            [("FIN", False), ("MKG", False), ("HR", False)],
+            hierarchical=False,
+        )
+    )
     print("Policy:", policy)
 
     # Example storing keys in Cosmian KMS
