@@ -24,7 +24,6 @@ async def main(use_kms: bool = True):
             hierarchical=False,
         )
     )
-    print("Policy:", policy)
 
     # Example storing keys in Cosmian KMS
     if use_kms:

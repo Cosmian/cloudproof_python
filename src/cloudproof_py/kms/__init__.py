@@ -12,7 +12,7 @@ from cosmian_cover_crypt import (
 
 class KmsClient(InternalKmsClient):
     async def create_cover_crypt_master_key_pair(
-        self, policy: Union[Policy, str]
+        self, policy: Union[Policy, bytes]
     ) -> Tuple[str, str]:
         """Generate the master authority keys for supplied Policy.
 
@@ -23,7 +23,7 @@ class KmsClient(InternalKmsClient):
             Tuple[str, str]: (Public key UID, Master secret key UID)
         """
         if isinstance(policy, Policy):
-            return await super().create_cover_crypt_master_key_pair(policy.to_json())
+            return await super().create_cover_crypt_master_key_pair(policy.to_bytes())
         return await super().create_cover_crypt_master_key_pair(policy)
 
     async def rotate_cover_crypt_attributes(

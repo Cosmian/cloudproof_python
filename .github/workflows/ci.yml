@@ -63,7 +63,8 @@ jobs:
         run: scripts/ci_install_pyo3_builds.sh
       - name: Type-check
         run: |
-          mypy src/ tests/
+          mypy src/cloudproof_py/findex/ src/cloudproof_py/cover_crypt/
+          mypy tests/
           mypy examples/cli_demo
           mypy examples/findex_upsert_search
           mypy examples/cover_crypt
