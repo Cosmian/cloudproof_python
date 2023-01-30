@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## Unreleased
+
+### Changed
+
+- `Findex.search` core function only returns `Location`s
+
+---
+
 ## [1.0.1] - 2023-01-13
 
 ### Features

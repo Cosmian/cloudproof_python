@@ -46,7 +46,11 @@ jobs:
           pip install -r requirements.txt
           pip install mypy types-termcolor>=1.1 types_redis>=4.3
           pip install cloudproof_py*.whl
-          pip install ci_deps/*.whl
+      - name: Install last pyo3 builds
+        env:
+          COVER_CRYPT_TAG: v8.0.2
+          FINDEX_TAG: last_build
+        run: scripts/ci_install_pyo3_builds.sh
       - name: Type-check
         run: |
           mypy src/ tests/

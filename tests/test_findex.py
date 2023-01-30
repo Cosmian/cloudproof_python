@@ -247,6 +247,21 @@ class TestFindexSQLite(unittest.TestCase):
         self.assertEqual(len(res["Mar"]), 2)
         self.assertEqual(len(res["She"]), 2)
 
+        # test process callback
+        def early_stop_progress_callback(res: Dict[str, List[IndexedValue]]):
+            if "Martin" in res:
+                return False
+            return True
+
+        res = self.interface.search(
+            ["Mar"],
+            self.mk,
+            self.label,
+            progress_callback=early_stop_progress_callback,
+        )
+        # only one location found after early stopping
+        self.assertEqual(len(res["Mar"]), 1)
+
     def test_sqlite_compact(self) -> None:
         indexed_values_and_keywords = {
             IndexedValue.from_location(key): value for key, value in self.users.items()
