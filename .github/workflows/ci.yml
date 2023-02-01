@@ -59,7 +59,7 @@ jobs:
       - name: Install last pyo3 builds
         env:
           COVER_CRYPT_TAG: last_build
-          FINDEX_TAG: v2.0.0
+          FINDEX_TAG: last_build
         run: scripts/ci_install_pyo3_builds.sh
       - name: Type-check
         run: |
