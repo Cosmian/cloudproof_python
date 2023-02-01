@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Features
+
+- Add KMS support
+
 ### Changed
 
 - `Findex.search` core function only returns `Location`s

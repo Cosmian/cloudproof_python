@@ -72,17 +72,21 @@ def generate_non_regression_vector():
         PolicyAxis(
             "Security Level",
             [
-                "Protected",
-                "Low Secret",
-                "Medium Secret",
-                "High Secret",
-                "Top Secret",
+                ("Protected", False),
+                ("Low Secret", False),
+                ("Medium Secret", False),
+                ("High Secret", False),
+                ("Top Secret", False),
             ],
             hierarchical=True,
         )
     )
     policy.add_axis(
-        PolicyAxis("Department", ["R&D", "HR", "MKG", "FIN"], hierarchical=False)
+        PolicyAxis(
+            "Department",
+            [("R&D", False), ("HR", False), ("MKG", False), ("FIN", False)],
+            hierarchical=False,
+        )
     )
     instance = CoverCrypt()
 
@@ -92,7 +96,7 @@ def generate_non_regression_vector():
     non_regression_vector["master_secret_key"] = base64_str(
         master_private_key.to_bytes()
     )
-    non_regression_vector["policy"] = base64_str(policy.to_json())
+    non_regression_vector["policy"] = base64_str(policy.to_bytes())
 
     # Generate user secret keys
     non_regression_vector["top_secret_mkg_fin_key"] = generate_user(
@@ -177,7 +181,7 @@ def test_non_regression_vector(vector: dict) -> None:
     #
     # Import policy and master keys
     #
-    Policy.from_json(b64decode(vector["policy"]).decode("utf-8"))
+    Policy.from_bytes(b64decode(vector["policy"]))
     MasterSecretKey.from_bytes(b64decode(vector["master_secret_key"]))
     PublicKey.from_bytes(b64decode(vector["public_key"]))
 
