@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple, Set, Callable
 from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
@@ -16,7 +16,6 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
         super().__init__()
         self.findex_core.set_upsert_callbacks(
             self.fetch_entry_table,
-            self.fetch_chain_table,
             self.upsert_entry_table,
             self.insert_chain_table,
         )
@@ -43,17 +42,6 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
-
-        Returns:
-            Dict[bytes, bytes]: uid -> value mapping
-        """
-
-    @abstractmethod
-    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
-        """Query the Chain Table.
-
-        Args:
-            chain_uids (List[bytes]): uids to query
 
         Returns:
             Dict[bytes, bytes]: uid -> value mapping
@@ -87,7 +75,7 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
     def __init__(self) -> None:
         super().__init__()
         self.findex_core.set_search_callbacks(
-            self.fetch_entry_table, self.fetch_chain_table, self.progress_callback
+            self.fetch_entry_table, self.fetch_chain_table
         )
 
     @abstractmethod
@@ -112,17 +100,6 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             Dict[bytes, bytes]: uid -> value mapping
         """
 
-    def progress_callback(self, results: List[IndexedValue]) -> bool:
-        """Intermediate search results.
-
-        Args:
-            results (List[IndexedValue]): new locations found
-
-        Returns:
-            bool: continue recursive search
-        """
-        return True
-
     def search(
         self,
         keywords: List[str],
@@ -131,40 +108,34 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
         fetch_chains_batch_size: int = 0,
+        progress_callback: Optional[
+            Callable[[Dict[str, List[IndexedValue]]], bool]
+        ] = None,
     ) -> Dict[str, List[bytes]]:
         """Recursively search Findex graphs for `Locations` corresponding to the given `Keyword`.
 
         Args:
-            keywords (List[str]): keywords to search using Findex
-            master_key (MasterKey): user secret key
-            label (Label): public label used in keyword hashing
+            keywords (List[str]): keywords to search using Findex.
+            master_key (MasterKey): user secret key.
+            label (Label): public label used in keyword hashing.
             max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
             max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
-            fetch_chains_batch_size (int, optional): batch size during fetch chain
+            fetch_chains_batch_size (int, optional): batch size during fetch chain.
+            progress_callback (Callable[[Dict[str, List[IndexedValue]]], bool], optional): callback
+                to process intermediate search results.
 
         Returns:
             Dict[str, List[bytes]]: `Locations` found by `Keyword`
         """
-        res_indexed_values = self.findex_core.search_wrapper(
+        return self.findex_core.search_wrapper(
             keywords,
             master_key,
             label,
             max_result_per_keyword,
             max_depth,
             fetch_chains_batch_size,
+            progress_callback,
         )
-
-        # return only locations
-        res_locations: Dict[str, List[bytes]] = {}
-        for keyword, indexed_values in res_indexed_values.items():
-            locations = []
-            for indexed_value in indexed_values:
-                loc = indexed_value.get_location()
-                if loc:
-                    locations.append(loc)
-            res_locations[keyword] = locations
-
-        return res_locations
 
 
 class FindexCompact(FindexBase, metaclass=ABCMeta):

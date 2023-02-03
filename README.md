@@ -69,6 +69,7 @@ This library depends on [CoverCrypt](https://github.com/Cosmian/cover_crypt) and
 
 This table shows the minimum version correspondence between the various components.
 
-| `cloudproof_py` | CoverCrypt | Findex |
-| --------------- | ---------- | ------ |
-| >=1.0.0         | 8.0.1      | 1.0.1  |
+| `cloudproof_py` | CoverCrypt | Findex | KMS   |
+| --------------- | ---------- | ------ | ----- |
+| >=2.0.0         | 10.0.0     | 2.0.1  | 4.2.0 |
+| >=1.0.0         | 8.0.1      | 2.0.0  | -     |

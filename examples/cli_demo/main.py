@@ -45,12 +45,16 @@ if __name__ == "__main__":
     policy.add_axis(
         cover_crypt.PolicyAxis(
             "Country",
-            ["France", "Spain", "Germany"],
+            [("France", False), ("Spain", False), ("Germany", False)],
             hierarchical=False,
         )
     )
     policy.add_axis(
-        cover_crypt.PolicyAxis("Department", ["MKG", "HR", "SEC"], hierarchical=True)
+        cover_crypt.PolicyAxis(
+            "Department",
+            [("MKG", False), ("HR", False), ("SEC", False)],
+            hierarchical=True,
+        )
     )
     cc_interface = cover_crypt.CoverCrypt()
     cc_master_key, cc_public_key = cc_interface.generate_master_keys(policy)

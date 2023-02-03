@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2023-02-03
+
+### Features
+
+- Add KMS support
+- Add CoverCrypt (post-quantum resistant) support
+
+### Changed
+
+- `Findex.search` core function only returns `Location`s
+
 ---
 
 ## [1.0.1] - 2023-01-13
