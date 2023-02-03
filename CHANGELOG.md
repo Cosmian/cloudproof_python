@@ -2,13 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
----
-
-## Unreleased
+## [2.0.0] - 2023-02-03
 
 ### Features
 
 - Add KMS support
+- Add CoverCrypt (post-quantum resistant) support
 
 ### Changed
 
