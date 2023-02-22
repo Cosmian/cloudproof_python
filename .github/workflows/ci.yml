@@ -65,6 +65,7 @@ jobs:
           mypy examples/cover_crypt
       - name: Run tests
         run: |
+          python tests/non_regression_cover_crypt.py --test --write
           python -m unittest tests/test*.py
       - name: Upload non-regression test vectors
         uses: actions/upload-artifact@v3
