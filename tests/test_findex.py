@@ -309,10 +309,10 @@ class TestFindexNonRegressionTest(unittest.TestCase):
 
         # Create indexed entries for users and upsert them
         new_indexed_entries = {
-            IndexedValue.from_location(user["id"].encode("utf-8")): [
+            IndexedValue.from_location(id.to_bytes(8, "big")): [
                 str(user[k]) for k in list(user.keys())[1:]
             ]
-            for user in self.users
+            for id, user in enumerate(self.users)
         }
         self.interface.upsert(new_indexed_entries, self.mk, self.label)
         conn.commit()
