@@ -66,3 +66,52 @@ jobs:
       - name: Run tests
         run: |
           python -m unittest tests/test*.py
+      - name: Upload non-regression test vectors
+        uses: actions/upload-artifact@v3
+        with:
+          name: cloudproof_python
+          path: |
+            ./tests/data/export/non_regression_vector.json
+            ./tests/data/export/sqlite.db
+          retention-days: 1
+          if-no-files-found: error
+
+  cloudproof_java:
+    needs: test
+    uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_java_in_docker.yml@develop
+    with:
+      branch: develop
+      target: x86_64-unknown-linux-gnu
+      extension: so
+      destination: linux-x86-64
+      os: ubuntu-20.04
+      kms-version: 4.2.0
+      copy_fresh_build: false
+      copy_regression_files: |
+        cp ./cloudproof_python/non_regression_vector.json src/test/resources/cover_crypt/non_regression/python_non_regression_vector.json
+        cp ./cloudproof_python/sqlite.db                  src/test/resources/findex/non_regression/python_sqlite.db
+
+  cloudproof_js:
+    needs: test
+    uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_js.yml@develop
+    with:
+      branch: develop
+      target: wasm32-unknown-unknown
+      kms-version: 4.2.0
+      copy_fresh_build: false
+      copy_regression_files: |
+        cp ./cloudproof_python/non_regression_vector.json tests/data/cover_crypt/non_regression/python_non_regression_vector.json
+        cp ./cloudproof_python/sqlite.db                  tests/data/findex/non_regression/python_sqlite.db
+
+  cloudproof_flutter:
+    needs:
+      - test
+    uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_flutter.yml@develop
+    with:
+      branch: develop
+      target: x86_64-unknown-linux-gnu
+      extension: so
+      copy_fresh_build: false
+      copy_regression_files: |
+        cp ./cloudproof_python/non_regression_vector.json test/resources/cover_crypt/non_regression/python_non_regression_vector.json
+        cp ./cloudproof_python/sqlite.db                  test/resources/findex/non_regression/python_sqlite.db
