@@ -116,3 +116,11 @@ jobs:
       copy_regression_files: |
         cp ./cloudproof_python/non_regression_vector.json test/resources/cover_crypt/non_regression/python_non_regression_vector.json
         cp ./cloudproof_python/sqlite.db                  test/resources/findex/non_regression/python_sqlite.db
+
+  cleanup:
+    needs:
+      - cloudproof_flutter
+      - cloudproof_java
+      - cloudproof_js
+    uses: Cosmian/reusable_workflows/.github/workflows/cleanup_cache.yml@main
+    secrets: inherit
