@@ -7,12 +7,29 @@ The library provides a Python API to the **Cloudproof Encryption** product of th
 
 <!-- toc -->
 
+- [Licensing](#licensing)
+- [Cryptographic primitives](#cryptographic-primitives)
 - [Getting started](#getting-started)
 - [Demo](#demo)
 - [Building and testing](#building-and-testing)
 - [Versions Correspondence](#versions-correspondence)
 
 <!-- tocstop -->
+
+## Licensing
+
+The library is available under a dual licensing scheme Affero GPL/v3 and commercial. See [LICENSE.md](LICENSE.md) for details.
+
+## Cryptographic primitives
+
+The library is based on:
+
+- [CoverCrypt](https://github.com/Cosmian/cover_crypt) algorithm which allows
+  creating ciphertexts for a set of attributes and issuing user keys with access
+  policies over these attributes. `CoverCrypt` offers Post-Quantum resistance.
+
+- [Findex](https://github.com/Cosmian/findex) which is a cryptographic protocol designed to securely make search queries on
+  an untrusted cloud server. Thanks to its encrypted indexes, large databases can
 
 ## Getting started
 
@@ -69,7 +86,7 @@ This library depends on [CoverCrypt](https://github.com/Cosmian/cover_crypt) and
 
 This table shows the minimum version correspondence between the various components.
 
-| `cloudproof_py` | CoverCrypt | Findex | KMS   |
-| --------------- | ---------- | ------ | ----- |
-| >=2.0.0         | 10.0.0     | 2.0.1  | 4.2.0 |
-| >=1.0.0         | 8.0.1      | 2.0.0  | -     |
+| `cloudproof_py` | CoverCrypt | Findex      | KMS   |
+| --------------- | ---------- | ----------- | ----- |
+| >=2.0.0         | 10.0.0     | 2.0.1,2.1.0 | 4.2.0 |
+| >=1.0.0         | 8.0.1      | 2.0.0       | -     |

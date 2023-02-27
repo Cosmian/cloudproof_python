@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
+import argparse
+from typing import Dict, List, Union
+
 from findex_dict import FindexDict
 from findex_redis import FindexRedis
 from findex_sqlite import FindexSQLite
-from cloudproof_py import findex
-from typing import Union
-import argparse
+
+from cloudproof_py.findex import MasterKey, Label, IndexedValue, Findex, utils
 
 # Simple database containing the firstname and lastname of each user.
 # Each line has a corresponding UID: 1, 2 or 3.
@@ -19,13 +21,13 @@ def main(backend: str = "Dict"):
     print("Database to index:", data)
 
     # Initialize a symmetric key
-    master_key = findex.MasterKey.random()
+    master_key = MasterKey.random()
 
     # Initialize a random label
-    label = findex.Label.random()
+    label = Label.random()
 
     # Instance the class implementing the required callbacks
-    findex_interface: Union[findex.Findex.FindexUpsert, findex.Findex.FindexSearch]
+    findex_interface: Union[Findex.FindexUpsert, Findex.FindexSearch]
     if backend == "Redis":
         findex_interface = FindexRedis()
     elif backend == "SQLite":
@@ -37,7 +39,7 @@ def main(backend: str = "Dict"):
     indexed_values_and_keywords = {}
     for uid, keywords in data.items():
         # Convert database UIDs to IndexedValue expected by Findex
-        location = findex.IndexedValue.from_location(uid.encode("utf-8"))
+        location = IndexedValue.from_location(uid.encode("utf-8"))
         # This location has 2 keywords associated: the firstname and lastname
         indexed_values_and_keywords[location] = keywords
 
@@ -60,21 +62,21 @@ def main(backend: str = "Dict"):
 
     # Create the alias `Joe` for `John`
     alias_graph = {
-        findex.IndexedValue.from_keyword(b"John"): ["Joe"],
+        IndexedValue.from_keyword(b"John"): ["Joe"],
     }
     findex_interface.upsert(alias_graph, master_key, label)
 
     # Now searching `Joe` will return the same location as `John`
-    print("Search for Joe:")
+    print("Search with aliases:")
     print("\t", findex_interface.search(["Joe"], master_key, label))
 
     # Generate an auto-completion graph:
     # For example, with the word `Wilkins`, one could upsert the following aliases:
     # ["Wil" => "Wilk", "Wilk" => "Wilki", "Wilki" => "Wilkin", "Wilkin" => "Wilkins"].
-    # A search for the Keyword Thi will then return the Location of `Wilkins`.
+    # A search for the Keyword "Wil" will then return the Location of `Wilkins`.
 
     # CloudProof provides a helper function to generate such graph
-    auto_completion_graph = findex.utils.generate_auto_completion(
+    auto_completion_graph = utils.generate_auto_completion(
         ["Martin", "Martial", "Wilkins"]
     )
     findex_interface.upsert(auto_completion_graph, master_key, label)
@@ -86,6 +88,17 @@ def main(backend: str = "Dict"):
 
     # `Mar` points to both Martin's and Martial's locations.
     # `Wil` only points to Wilkins' location.
+
+    print("Search using the `progress_callback`: ")
+
+    def echo_progress_callback(res: Dict[str, List[IndexedValue]]) -> bool:
+        print("\t Partial results:", res)
+        return True
+
+    found_locations = findex_interface.search(
+        ["Mar"], master_key, label, progress_callback=echo_progress_callback
+    )
+    print("\t Final results:", found_locations)
 
 
 if __name__ == "__main__":
@@ -111,5 +124,5 @@ if __name__ == "__main__":
         print("Using in-memory SQLite")
         main("SQLite")
     else:
-        print("Using in-memory dictionnaries")
+        print("Using in-memory dictionaries")
         main("Dict")

@@ -13,15 +13,20 @@ async def main(use_kms: bool = True):
     policy.add_axis(
         PolicyAxis(
             "Security Level",
-            [("Protected", False), ("Confidential", False), ("Top Secret", False)],
-            hierarchical=True,
+            [
+                ("Protected", False),
+                ("Confidential", False),
+                # the following attribute is hybridized allowing post-quantum resistance
+                ("Top Secret", True),
+            ],
+            hierarchical=True,  # this is a hierarchical axis
         )
     )
     policy.add_axis(
         PolicyAxis(
             "Department",
             [("FIN", False), ("MKG", False), ("HR", False)],
-            hierarchical=False,
+            hierarchical=False,  # this is NOT a hierarchical axis
         )
     )
 

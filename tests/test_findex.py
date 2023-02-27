@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-import sqlite3
-from cloudproof_py.findex import Findex, IndexedValue, MasterKey, Label
-from cloudproof_py.findex.utils import generate_auto_completion
-from typing import Dict, List, Optional, Set, Tuple
-import unittest
 import json
-from base64 import b64decode
 import os
+import sqlite3
+import unittest
+from base64 import b64decode
+from typing import Dict, List, Optional, Set, Tuple
+
+from cloudproof_py.findex import Findex, IndexedValue, Label, MasterKey
+from cloudproof_py.findex.utils import generate_auto_completion
 
 
 def create_table(conn, create_table_sql):
@@ -248,7 +249,7 @@ class TestFindexSQLite(unittest.TestCase):
         self.assertEqual(len(res["She"]), 2)
 
         # test process callback
-        def early_stop_progress_callback(res: Dict[str, List[IndexedValue]]):
+        def early_stop_progress_callback(res: Dict[str, List[IndexedValue]]) -> bool:
             if "Martin" in res:
                 return False
             return True
@@ -309,10 +310,10 @@ class TestFindexNonRegressionTest(unittest.TestCase):
 
         # Create indexed entries for users and upsert them
         new_indexed_entries = {
-            IndexedValue.from_location(user["id"].encode("utf-8")): [
+            IndexedValue.from_location(id.to_bytes(8, "big")): [
                 str(user[k]) for k in list(user.keys())[1:]
             ]
-            for user in self.users
+            for id, user in enumerate(self.users)
         }
         self.interface.upsert(new_indexed_entries, self.mk, self.label)
         conn.commit()
