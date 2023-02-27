@@ -29,8 +29,8 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
         """Upserts the given relations between `IndexedValue` and `Keyword` into Findex tables.
 
         Args:
-            indexed_values_and_keywords (Dict[bytes, List[str]]): map of `IndexedValue`
-                                                                to a list of `Keyword`
+            indexed_values_and_keywords (Dict[IndexedValue, List[str]]): map of `IndexedValue`
+                                                                        to a list of `Keyword`
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
         """
