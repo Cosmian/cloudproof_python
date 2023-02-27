@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2023-02-27
+
+### Documentation
+
+- Update examples with `progress_callback`
+
+### Testing
+
+- Fix int conversions for new regressions tests
+- Renew non-reg cover_crypt tests
+- Uniformize findex dataset
+
+### Ci
+
+- Add cross tests
+- Clean github cache for each completed PR
+
 ## [2.0.0] - 2023-02-03
 
 ### Features
