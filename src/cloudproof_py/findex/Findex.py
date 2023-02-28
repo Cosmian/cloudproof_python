@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
 from typing import Dict, List, Optional, Tuple, Set, Callable
-from cosmian_findex import IndexedValue, Label, MasterKey, InternalFindex
+from cloudproof_findex import IndexedValue, Label, MasterKey, InternalFindex
 
 
 class FindexBase(metaclass=ABCMeta):

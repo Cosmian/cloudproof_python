@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from cosmian_cover_crypt import (
+from cloudproof_cover_crypt import (
     Attribute,
     Policy,
     PolicyAxis,

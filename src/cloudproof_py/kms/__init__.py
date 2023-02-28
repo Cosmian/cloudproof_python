@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from typing import Tuple, Union, List, Optional
 from cosmian_kms import KmsObject, KmsClient as InternalKmsClient
-from cosmian_cover_crypt import (
+from cloudproof_cover_crypt import (
     Policy,
     Attribute,
     PublicKey,

@@ -17,7 +17,6 @@ sql_create_users_table = """CREATE TABLE IF NOT EXISTS users (
                                             region BLOB NOT NULL,
                                             employeeNumber BLOB NOT NULL,
                                             security BLOB NOT NULL
-
                                         );"""
 
 sql_create_entry_table = """CREATE TABLE IF NOT EXISTS entry_table (
