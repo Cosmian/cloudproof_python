@@ -8,12 +8,12 @@ install_lib() {
         rm linux.zip && rm -rf x86_64-unknown-linux-gnu
 }
 
-install_lib "cover_crypt" "v10.0.0"
+install_lib "cover_crypt" "v11.0.0"
 if [ $? -ne 0 ]; then
     install_lib "cover_crypt" "last_build"
 fi
 
-install_lib "findex" "v2.1.0"
+install_lib "findex" "v3.0.0"
 if [ $? -ne 0 ]; then
     install_lib "findex" "last_build"
 fi

@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
-from typing import Tuple, Union, List, Optional
-from cosmian_kms import KmsObject, KmsClient as InternalKmsClient
+from typing import List, Optional, Tuple, Union
+
 from cloudproof_cover_crypt import (
-    Policy,
     Attribute,
-    PublicKey,
     MasterSecretKey,
+    Policy,
+    PublicKey,
     UserSecretKey,
 )
+from cosmian_kms import KmsClient as InternalKmsClient
+from cosmian_kms import KmsObject
 
 
 class KmsClient(InternalKmsClient):

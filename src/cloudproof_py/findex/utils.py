@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from typing import List, Dict
+from typing import Dict, List
+
 from cloudproof_findex import IndexedValue
 
 
