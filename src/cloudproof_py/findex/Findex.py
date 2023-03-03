@@ -1,8 +1,17 @@
 # -*- coding: utf-8 -*-
 from abc import ABCMeta, abstractmethod
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Set, Tuple, Union
 
-from cloudproof_findex import IndexedValue, InternalFindex, Label, MasterKey
+from cloudproof_findex import (
+    IndexedValuesAndKeywords,
+    InternalFindex,
+    Keyword,
+    Label,
+    Location,
+    MasterKey,
+    ProgressResults,
+    SearchResults,
+)
 
 
 class FindexBase(metaclass=ABCMeta):
@@ -23,15 +32,15 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
 
     def upsert(
         self,
-        indexed_values_and_keywords: Dict[IndexedValue, List[str]],
+        indexed_values_and_keywords: IndexedValuesAndKeywords,
         master_key: MasterKey,
         label: Label,
     ) -> None:
         """Upserts the given relations between `IndexedValue` and `Keyword` into Findex tables.
 
         Args:
-            indexed_values_and_keywords (Dict[IndexedValue, List[str]]): map of `IndexedValue`
-                                                                        to a list of `Keyword`
+            indexed_values_and_keywords (Dict[Location | Keyword, List[Keyword | str]]):
+                map of `IndexedValue` to a list of `Keyword`
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
         """
@@ -103,20 +112,18 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
 
     def search(
         self,
-        keywords: List[str],
+        keywords: Sequence[Union[Keyword, str]],
         master_key: MasterKey,
         label: Label,
         max_result_per_keyword: int = 2**32 - 1,
         max_depth: int = 100,
         fetch_chains_batch_size: int = 0,
-        progress_callback: Optional[
-            Callable[[Dict[str, List[IndexedValue]]], bool]
-        ] = None,
-    ) -> Dict[str, List[bytes]]:
+        progress_callback: Optional[Callable[[ProgressResults], bool]] = None,
+    ) -> SearchResults:
         """Recursively search Findex graphs for `Locations` corresponding to the given `Keyword`.
 
         Args:
-            keywords (List[str]): keywords to search using Findex.
+            keywords (List[Keyword | str]): keywords to search using Findex.
             master_key (MasterKey): user secret key.
             label (Label): public label used in keyword hashing.
             max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
@@ -126,7 +133,7 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
                 to process intermediate search results.
 
         Returns:
-            Dict[str, List[bytes]]: `Locations` found by `Keyword`
+            Dict[Keyword, List[Location]]: `Locations` found by `Keyword`
         """
         return self.findex_core.search_wrapper(
             keywords,
@@ -216,14 +223,14 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def list_removed_locations(self, locations: List[bytes]) -> List[bytes]:
+    def list_removed_locations(self, locations: List[Location]) -> List[Location]:
         """Check whether the given `Locations` still exist.
 
         Args:
-            locations (List[bytes]): `Locations` to check
+            locations (List[Location]): `Locations` to check
 
         Returns:
-            List[bytes]: list of `Locations` that were removed
+            List[Location]: list of `Locations` that were removed
         """
 
     def update_lines(
