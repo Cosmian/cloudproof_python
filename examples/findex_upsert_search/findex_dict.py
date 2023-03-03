@@ -25,8 +25,11 @@ class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
         """
         res = {}
         for uid in entry_uids:
+            # print(f"<<<<UID:{uid.hex()}")
             if uid in self.entry_table:
+                print(f"('{uid.hex()}', ", end='')
                 res[uid] = self.entry_table[uid]
+
         return res
 
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
@@ -42,6 +45,8 @@ class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
         for uid in chain_uids:
             if uid in self.chain_table:
                 res[uid] = self.chain_table[uid]
+
+        #print(">>>>", res)
         return res
 
     def upsert_entry_table(
