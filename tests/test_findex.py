@@ -6,7 +6,7 @@ import unittest
 from base64 import b64decode
 from typing import Dict, List, Optional, Set, Tuple
 
-from cloudproof_py.findex import Findex, Label, Location, MasterKey
+from cloudproof_py.findex import Findex, Keyword, Label, Location, MasterKey
 from cloudproof_py.findex.typing import IndexedValuesAndKeywords, ProgressResults
 from cloudproof_py.findex.utils import generate_auto_completion
 
@@ -246,10 +246,14 @@ class TestFindexSQLite(unittest.TestCase):
         # 2 names starting with Mar
         self.assertEqual(len(res["Mar"]), 2)
 
-        res = self.interface.search(["Mar", "She"], self.mk, self.label)
+        res = self.interface.search(
+            [Keyword.from_string("Mar"), Keyword.from_string("She")],
+            self.mk,
+            self.label,
+        )
         # all names starting with Mar or She
-        self.assertEqual(len(res["Mar"]), 2)
-        self.assertEqual(len(res["She"]), 2)
+        self.assertEqual(len(res[Keyword.from_string("Mar")]), 2)
+        self.assertEqual(len(res[Keyword.from_string("She")]), 2)
 
         # test process callback
         def early_stop_progress_callback(res: ProgressResults) -> bool:

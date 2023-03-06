@@ -21,7 +21,7 @@ def generate_auto_completion(
     Returns:
         Dict[Keywords, List[Keywords]]: keyword -> sub-word mapping to upsert in Findex.
     """
-    res = {}
+    res: IndexedValuesAndKeywords = {}
     for word in keywords:
         for i in range(min_word_len, len(word)):
             res[Keyword.from_string(word[: i + 1])] = [word[:i]]
