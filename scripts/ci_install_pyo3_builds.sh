@@ -2,10 +2,10 @@
 set -ux
 
 install_lib() {
-    wget "https://package.cosmian.com/cloudproof_rust/$1/all.zip" &&
-        unzip -o all.zip &&
+    wget "https://package.cosmian.com/cloudproof_rust/$1/linux.zip" &&
+        unzip -o linux.zip &&
         pip install --force-reinstall x86_64-unknown-linux-gnu/python-x86_64-unknown-linux-gnu/*.whl &&
-        rm all.zip && rm -rf x86_64*
+        rm linux.zip && rm -rf x86_64*
 }
 
 install_lib "v1.0.0"
