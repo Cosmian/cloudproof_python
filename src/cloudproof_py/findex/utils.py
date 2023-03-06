@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from typing import List, Dict
-from cosmian_findex import IndexedValue
+from typing import Dict, List
+
+from cloudproof_findex import IndexedValue
 
 
 def generate_auto_completion(
