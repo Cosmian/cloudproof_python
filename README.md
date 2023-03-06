@@ -1,4 +1,4 @@
-# Cloudproof Encryption Python Library
+# Cloudproof Python Library
 
 [![PyPI version](https://badge.fury.io/py/cloudproof_py.svg)](https://badge.fury.io/py/cloudproof_py)
 ![Build status](https://github.com/Cosmian/cloudproof_python/actions/workflows/ci.yml/badge.svg)
