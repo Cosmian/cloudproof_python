@@ -10,5 +10,5 @@ install_lib() {
 
 install_lib "v1.0.0"
 if [ $? -ne 0 ]; then
-    install_lib "last_build"
+    install_lib "last_build/feature/add_findex"
 fi
