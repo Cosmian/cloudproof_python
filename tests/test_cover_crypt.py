@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
+
 from cloudproof_py.cover_crypt import (
-    Policy,
-    PolicyAxis,
     Attribute,
     CoverCrypt,
     MasterSecretKey,
+    Policy,
+    PolicyAxis,
     PublicKey,
     UserSecretKey,
 )

@@ -2,9 +2,10 @@
 import json
 import sqlite3
 from secrets import token_bytes
-from termcolor import colored
 
 from findex_db import FindexSQLite
+from termcolor import colored
+
 from cloudproof_py import cover_crypt, findex
 
 sql_create_users_table = """CREATE TABLE IF NOT EXISTS users (
@@ -123,8 +124,8 @@ if __name__ == "__main__":
     findex_interface = FindexSQLite(conn)
 
     # Mapping of the users database UID to the corresponding keywords (firstname, lastname, etc)
-    mapping_indexed_values_to_keywords = {
-        findex.IndexedValue.from_location(user_id): [
+    mapping_indexed_values_to_keywords: findex.typing.IndexedValuesAndKeywords = {
+        findex.Location.from_bytes(user_id): [
             keyword.lower() for keyword in user.values()
         ]
         for user_id, user in zip(user_db_uids, users)
@@ -172,7 +173,7 @@ if __name__ == "__main__":
         if len(found_users) == 0:
             print(colored("No user found!", "red", attrs=["bold"]))
             continue
-        found_users_uids = found_users[keyword]
+        found_users_uids = [bytes(location) for location in found_users[keyword]]
 
         # 2. Query user database
         str_uids = ",".join("?" * len(found_users_uids))
