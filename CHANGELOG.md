@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+---
+
+## [3.0.0] - 2023-03-08
+
+### Features
+
+- Support cover_crypt v11.0 (#20)
+- Update to Findex 3.0 (#21)
+
+---
+
 ## [2.0.1] - 2023-02-27
 
 ### Documentation

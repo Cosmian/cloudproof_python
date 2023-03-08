@@ -6,7 +6,8 @@ import unittest
 from base64 import b64decode
 from typing import Dict, List, Optional, Set, Tuple
 
-from cloudproof_py.findex import Findex, IndexedValue, Label, MasterKey
+from cloudproof_py.findex import Findex, Keyword, Label, Location, MasterKey
+from cloudproof_py.findex.typing import IndexedValuesAndKeywords, ProgressResults
 from cloudproof_py.findex.utils import generate_auto_completion
 
 
@@ -159,18 +160,20 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
         )
 
-    def list_removed_locations(self, locations: List[bytes]) -> List[bytes]:
-        """Check wether uids still exist in the database
+    def list_removed_locations(self, locations: List[Location]) -> List[Location]:
+        """Check whether the given `Locations` still exist.
 
         Args:
-            db_uids (List[bytes]): uids to check
+            locations (List[Location]): `Locations` to check
 
         Returns:
-            List[bytes]: list of uids that were removed
+            List[Location]: list of `Locations` that were removed
         """
         res = []
         for uid in locations:
-            cursor = self.conn.execute("SELECT * FROM users WHERE id = ?", (uid,))
+            cursor = self.conn.execute(
+                "SELECT * FROM users WHERE id = ?", (bytes(uid),)
+            )
             if not cursor.fetchone():
                 res.append(uid)
         return res
@@ -220,8 +223,8 @@ class TestFindexSQLite(unittest.TestCase):
     def test_sqlite_upsert_graph(self) -> None:
         # Simple insertion
 
-        indexed_values_and_keywords = {
-            IndexedValue.from_location(key): value for key, value in self.users.items()
+        indexed_values_and_keywords: IndexedValuesAndKeywords = {
+            Location.from_bytes(key): value for key, value in self.users.items()
         }
         self.interface.upsert(indexed_values_and_keywords, self.mk, self.label)
 
@@ -243,13 +246,17 @@ class TestFindexSQLite(unittest.TestCase):
         # 2 names starting with Mar
         self.assertEqual(len(res["Mar"]), 2)
 
-        res = self.interface.search(["Mar", "She"], self.mk, self.label)
+        res = self.interface.search(
+            [Keyword.from_string("Mar"), Keyword.from_string("She")],
+            self.mk,
+            self.label,
+        )
         # all names starting with Mar or She
-        self.assertEqual(len(res["Mar"]), 2)
-        self.assertEqual(len(res["She"]), 2)
+        self.assertEqual(len(res[Keyword.from_string("Mar")]), 2)
+        self.assertEqual(len(res[Keyword.from_string("She")]), 2)
 
         # test process callback
-        def early_stop_progress_callback(res: Dict[str, List[IndexedValue]]) -> bool:
+        def early_stop_progress_callback(res: ProgressResults) -> bool:
             if "Martin" in res:
                 return False
             return True
@@ -264,8 +271,8 @@ class TestFindexSQLite(unittest.TestCase):
         self.assertEqual(len(res["Mar"]), 1)
 
     def test_sqlite_compact(self) -> None:
-        indexed_values_and_keywords = {
-            IndexedValue.from_location(key): value for key, value in self.users.items()
+        indexed_values_and_keywords: IndexedValuesAndKeywords = {
+            Location.from_bytes(key): value for key, value in self.users.items()
         }
         self.interface.upsert(indexed_values_and_keywords, self.mk, self.label)
 
@@ -292,7 +299,7 @@ class TestFindexNonRegressionTest(unittest.TestCase):
     def setUp(self) -> None:
         # Init Findex objects
         self.mk = MasterKey.from_bytes(b64decode("6hb1TznoNQFvCWisGWajkA=="))
-        self.label = Label.from_bytes(b"Some Label")
+        self.label = Label.from_string("Some Label")
 
         with open("./tests/data/users.json") as f:
             self.users = json.load(f)
@@ -309,10 +316,8 @@ class TestFindexNonRegressionTest(unittest.TestCase):
         self.interface = FindexSQLite(conn)
 
         # Create indexed entries for users and upsert them
-        new_indexed_entries = {
-            IndexedValue.from_location(id.to_bytes(8, "big")): [
-                str(user[k]) for k in list(user.keys())[1:]
-            ]
+        new_indexed_entries: IndexedValuesAndKeywords = {
+            Location.from_int(id): [str(user[k]) for k in list(user.keys())[1:]]
             for id, user in enumerate(self.users)
         }
         self.interface.upsert(new_indexed_entries, self.mk, self.label)
@@ -333,8 +338,8 @@ class TestFindexNonRegressionTest(unittest.TestCase):
         self.assertEqual(len(res["France"]), 30)
 
         # Upsert a single user
-        new_user_entry = {
-            IndexedValue.from_location(b"10000"): [
+        new_user_entry: IndexedValuesAndKeywords = {
+            Location.from_int(10000): [
                 "another first name",
                 "another last name",
                 "another phone",

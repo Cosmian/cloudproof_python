@@ -1,1 +1,1 @@
-cloudproof-py==2.0
+cloudproof-py==3.0

@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
-from cosmian_findex import IndexedValue, Label, MasterKey
-from cloudproof_py.findex import Findex, utils
+from cloudproof_findex import FindexCloud, Keyword, Label, Location, MasterKey
 
-__all__ = ["IndexedValue", "Label", "MasterKey", "Findex", "utils"]
+from cloudproof_py.findex import Findex, typing, utils
+
+__all__ = [
+    "Keyword",
+    "Location",
+    "Label",
+    "MasterKey",
+    "Findex",
+    "utils",
+    "FindexCloud",
+    "typing",
+]

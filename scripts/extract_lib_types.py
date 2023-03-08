@@ -7,8 +7,8 @@ import pkgutil
 if __name__ == "__main__":
     SRC_DIR = "src/cloudproof_py"
     PKGs_dir = {
-        "cosmian_cover_crypt": f"{SRC_DIR}/cover_crypt",
-        "cosmian_findex": f"{SRC_DIR}/findex",
+        "cloudproof_cover_crypt": f"{SRC_DIR}/cover_crypt",
+        "cloudproof_findex": f"{SRC_DIR}/findex",
         "cosmian_kms": f"{SRC_DIR}/kms",
     }
 

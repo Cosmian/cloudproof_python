@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-from cosmian_cover_crypt import (
+from cloudproof_cover_crypt import (
     Attribute,
+    CoverCrypt,
+    MasterSecretKey,
     Policy,
     PolicyAxis,
-    CoverCrypt,
-    SymmetricKey,
-    MasterSecretKey,
     PublicKey,
+    SymmetricKey,
     UserSecretKey,
 )
 

@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import argparse
-from typing import Dict, List, Union
+from typing import Union
 
 from findex_dict import FindexDict
 from findex_redis import FindexRedis
 from findex_sqlite import FindexSQLite
 
-from cloudproof_py.findex import MasterKey, Label, IndexedValue, Findex, utils
+from cloudproof_py.findex import Findex, Keyword, Label, Location, MasterKey, utils
+from cloudproof_py.findex.typing import IndexedValuesAndKeywords, ProgressResults
 
 # Simple database containing the firstname and lastname of each user.
 # Each line has a corresponding UID: 1, 2 or 3.
@@ -36,10 +37,10 @@ def main(backend: str = "Dict"):
         findex_interface = FindexDict()
 
     # Create the index
-    indexed_values_and_keywords = {}
+    indexed_values_and_keywords: IndexedValuesAndKeywords = {}
     for uid, keywords in data.items():
         # Convert database UIDs to IndexedValue expected by Findex
-        location = IndexedValue.from_location(uid.encode("utf-8"))
+        location = Location.from_string(uid)
         # This location has 2 keywords associated: the firstname and lastname
         indexed_values_and_keywords[location] = keywords
 
@@ -61,8 +62,8 @@ def main(backend: str = "Dict"):
     # Keywords can point to Locations but also to other Keywords, thus generating a graph.
 
     # Create the alias `Joe` for `John`
-    alias_graph = {
-        IndexedValue.from_keyword(b"John"): ["Joe"],
+    alias_graph: IndexedValuesAndKeywords = {
+        Keyword.from_string("John"): ["Joe"],
     }
     findex_interface.upsert(alias_graph, master_key, label)
 
@@ -91,7 +92,7 @@ def main(backend: str = "Dict"):
 
     print("Search using the `progress_callback`: ")
 
-    def echo_progress_callback(res: Dict[str, List[IndexedValue]]) -> bool:
+    def echo_progress_callback(res: ProgressResults) -> bool:
         print("\t Partial results:", res)
         return True
 

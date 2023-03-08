@@ -8,7 +8,7 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "CloudProof_Py"
-copyright = "2022, Cosmian Tech"
+copyright = "2023, Cosmian Tech"
 author = "Cosmian Tech"
 
 # -- General configuration ---------------------------------------------------
