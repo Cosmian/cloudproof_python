@@ -103,7 +103,6 @@ def main(backend: str = "Dict"):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser(description="Findex example.")
     parser.add_argument(
         "--redis", action="store_true", help="Use Redis to store Findex indexing tables"
