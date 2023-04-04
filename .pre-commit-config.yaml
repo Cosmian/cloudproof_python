@@ -21,7 +21,7 @@ repos:
       - id: debug-statements
       - id: destroyed-symlinks
       - id: detect-private-key
-#      - id: double-quote-string-fixer
+      #      - id: double-quote-string-fixer
       - id: end-of-file-fixer
       - id: file-contents-sorter
       - id: fix-byte-order-marker
@@ -48,13 +48,13 @@ repos:
   - repo: https://github.com/psf/black
     rev: 23.1.0
     hooks:
-      - id:  black
+      - id: black
 
   - repo: https://github.com/pycqa/flake8
     rev: 6.0.0
     hooks:
-    - id: flake8
-      args: [--max-line-length=100]
+      - id: flake8
+        args: [--max-line-length=100]
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: 'v1.1.1'
@@ -66,7 +66,14 @@ repos:
     rev: v0.33.0
     hooks:
       - id: markdownlint-fix
-        args: [--disable=MD013, --disable=MD024, --disable=MD041, --disable=MD046]
+        args:
+          [
+            --disable=MD004,
+            --disable=MD013,
+            --disable=MD024,
+            --disable=MD041,
+            --disable=MD046,
+          ]
 
   - repo: https://github.com/Lucas-C/pre-commit-hooks-nodejs
     rev: v1.1.2
@@ -74,4 +81,3 @@ repos:
       - id: htmlhint
       - id: dockerfile_lint
       - id: markdown-toc
-        args: [--bullets='-'] # comment this to refresh TOC

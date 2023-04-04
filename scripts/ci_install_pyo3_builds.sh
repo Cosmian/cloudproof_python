@@ -8,7 +8,7 @@ install_lib() {
         rm linux.zip && rm -rf x86_64*
 }
 
-install_lib "v1.0.0"
+install_lib "v1.1.0"
 if [ $? -ne 0 ]; then
-    install_lib "last_build/feature/pyo3-findex-cloud"
+    install_lib "last_build/feature/expose_fpe_in_interfaces"
 fi

@@ -62,7 +62,9 @@ jobs:
           pip install cloudproof_py*.whl
       - name: Type-check
         run: |
-          mypy src/cloudproof_py/findex/ src/cloudproof_py/cover_crypt/
+          mypy src/cloudproof_py/findex/
+          mypy src/cloudproof_py/cover_crypt/
+          mypy src/cloudproof_py/cloudproof_fpe/
           mypy tests/
           mypy examples/cli_demo
           mypy examples/findex_upsert_search
