@@ -39,6 +39,10 @@ jobs:
           KMS_SHARED_PATH: /tmp
         ports:
           - 9998:9998
+      findex_cloud:
+        image: ghcr.io/cosmian/findex_cloud:0.1.0
+        ports:
+          - 8080:8080
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -53,12 +57,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mypy types-termcolor>=1.1 types_redis>=4.3
+          pip install mypy types-termcolor>=1.1 types_redis>=4.3 requests>=2.28 types-requests>=2.28
           scripts/ci_install_pyo3_builds.sh
           pip install cloudproof_py*.whl
       - name: Type-check
         run: |
-          mypy src/cloudproof_py/findex/ src/cloudproof_py/cover_crypt/
+          mypy src/cloudproof_py/findex/
+          mypy src/cloudproof_py/cover_crypt/
+          mypy src/cloudproof_py/cloudproof_fpe/
           mypy tests/
           mypy examples/cli_demo
           mypy examples/findex_upsert_search
@@ -66,6 +72,7 @@ jobs:
       - name: Run tests
         run: |
           python tests/non_regression_cover_crypt.py --test --write
+          python tests/findex_cloud.py
           python -m unittest tests/test*.py
       - name: Upload non-regression test vectors
         uses: actions/upload-artifact@v3
