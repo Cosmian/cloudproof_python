@@ -18,7 +18,7 @@ classifiers = [
 ]
 dependencies = [
   "cover-crypt >= 11.0.0, < 12.0.0",
-  "findex >= 3.0.0, < 4.0.0",
+  "findex >= 4.0.0, < 5.0.0",
   "cosmian-kms >= 4.3.3, < 5.0.0",
   "cloudproof-fpe >= 0.1.0, < 1.0.0",
 ]
