@@ -226,9 +226,9 @@ class TestFindexSQLite(unittest.TestCase):
         indexed_values_and_keywords: IndexedValuesAndKeywords = {
             Location.from_bytes(key): value for key, value in self.users.items()
         }
-        self.interface.upsert(indexed_values_and_keywords, self.mk, self.label)
+        self.interface.upsert(self.mk, self.label, indexed_values_and_keywords, {})
 
-        res = self.interface.search(["Sheperd"], self.mk, self.label)
+        res = self.interface.search(self.mk, self.label, ["Sheperd"])
         self.assertEqual(len(res["Sheperd"]), 2)
         self.assertEqual(self.interface.get_num_lines("entry_table"), 5)
         self.assertEqual(self.interface.get_num_lines("chain_table"), 5)
@@ -237,19 +237,19 @@ class TestFindexSQLite(unittest.TestCase):
 
         keywords_list = [item for sublist in self.users.values() for item in sublist]
         graph = generate_auto_completion(keywords_list)
-        self.interface.upsert(graph, self.mk, self.label)
+        self.interface.upsert(self.mk, self.label, graph, {})
 
         self.assertEqual(self.interface.get_num_lines("entry_table"), 18)
         self.assertEqual(self.interface.get_num_lines("chain_table"), 18)
 
-        res = self.interface.search(["Mar"], self.mk, self.label)
+        res = self.interface.search(self.mk, self.label, ["Mar"])
         # 2 names starting with Mar
         self.assertEqual(len(res["Mar"]), 2)
 
         res = self.interface.search(
-            [Keyword.from_string("Mar"), Keyword.from_string("She")],
             self.mk,
             self.label,
+            [Keyword.from_string("Mar"), Keyword.from_string("She")],
         )
         # all names starting with Mar or She
         self.assertEqual(len(res[Keyword.from_string("Mar")]), 2)
@@ -262,9 +262,9 @@ class TestFindexSQLite(unittest.TestCase):
             return True
 
         res = self.interface.search(
-            ["Mar"],
             self.mk,
             self.label,
+            ["Mar"],
             progress_callback=early_stop_progress_callback,
         )
         # only one location found after early stopping
@@ -274,24 +274,24 @@ class TestFindexSQLite(unittest.TestCase):
         indexed_values_and_keywords: IndexedValuesAndKeywords = {
             Location.from_bytes(key): value for key, value in self.users.items()
         }
-        self.interface.upsert(indexed_values_and_keywords, self.mk, self.label)
+        self.interface.upsert(self.mk, self.label, indexed_values_and_keywords, {})
 
         # Remove one line in the database before compacting
         self.interface.remove_users([b"1"])
         new_label = Label.random()
         new_mk = MasterKey.random()
-        self.interface.compact(1, self.mk, new_mk, new_label)
+        self.interface.compact(self.mk, new_mk, new_label, 1)
 
         # only one result left for `Sheperd`
-        res = self.interface.search(["Sheperd"], new_mk, new_label)
+        res = self.interface.search(new_mk, new_label, ["Sheperd"])
         self.assertEqual(len(res), 1)
 
         # searching with old label will fail
-        res = self.interface.search(["Sheperd"], new_mk, self.label)
+        res = self.interface.search(new_mk, self.label, ["Sheperd"])
         self.assertEqual(len(res), 0)
 
         # searching with old key will fail
-        res = self.interface.search(["Sheperd"], self.mk, new_label)
+        res = self.interface.search(self.mk, new_label, ["Sheperd"])
         self.assertEqual(len(res), 0)
 
 
@@ -320,11 +320,11 @@ class TestFindexNonRegressionTest(unittest.TestCase):
             Location.from_int(id): [str(user[k]) for k in list(user.keys())[1:]]
             for id, user in enumerate(self.users)
         }
-        self.interface.upsert(new_indexed_entries, self.mk, self.label)
+        self.interface.upsert(self.mk, self.label, new_indexed_entries, {})
         conn.commit()
 
         # Check the insertion is successful
-        res = self.interface.search(["France"], self.mk, self.label)
+        res = self.interface.search(self.mk, self.label, ["France"])
         self.assertEqual(len(res["France"]), 30)
 
         conn.close()
@@ -334,7 +334,7 @@ class TestFindexNonRegressionTest(unittest.TestCase):
         self.interface = FindexSQLite(conn)
 
         # Verify search results
-        res = self.interface.search(["France"], self.mk, self.label)
+        res = self.interface.search(self.mk, self.label, ["France"])
         self.assertEqual(len(res["France"]), 30)
 
         # Upsert a single user
@@ -350,10 +350,10 @@ class TestFindexNonRegressionTest(unittest.TestCase):
                 "confidential",
             ]
         }
-        self.interface.upsert(new_user_entry, self.mk, self.label)
+        self.interface.upsert(self.mk, self.label, new_user_entry, {})
 
         # Another search
-        res = self.interface.search(["France"], self.mk, self.label)
+        res = self.interface.search(self.mk, self.label, ["France"])
         self.assertEqual(len(res["France"]), 31)
 
         conn.close()

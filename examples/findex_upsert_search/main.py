@@ -45,11 +45,11 @@ def main(backend: str = "Dict"):
         indexed_values_and_keywords[location] = keywords
 
     # Upsert in Findex
-    findex_interface.upsert(indexed_values_and_keywords, master_key, label)
+    findex_interface.upsert(master_key, label, indexed_values_and_keywords, {})
 
     # Search
     keywords_to_search = ["Shepherd", "John"]
-    found_locations = findex_interface.search(keywords_to_search, master_key, label)
+    found_locations = findex_interface.search(master_key, label, keywords_to_search)
 
     print("Locations found by keyword:")
     for keyword, locations in found_locations.items():
@@ -65,11 +65,11 @@ def main(backend: str = "Dict"):
     alias_graph: IndexedValuesAndKeywords = {
         Keyword.from_string("John"): ["Joe"],
     }
-    findex_interface.upsert(alias_graph, master_key, label)
+    findex_interface.upsert(master_key, label, alias_graph, {})
 
     # Now searching `Joe` will return the same location as `John`
     print("Search with aliases:")
-    print("\t", findex_interface.search(["Joe"], master_key, label))
+    print("\t", findex_interface.search(master_key, label, ["Joe"]))
 
     # Generate an auto-completion graph:
     # For example, with the word `Wilkins`, one could upsert the following aliases:
@@ -80,9 +80,9 @@ def main(backend: str = "Dict"):
     auto_completion_graph = utils.generate_auto_completion(
         ["Martin", "Martial", "Wilkins"]
     )
-    findex_interface.upsert(auto_completion_graph, master_key, label)
+    findex_interface.upsert(master_key, label, auto_completion_graph, {})
 
-    found_locations = findex_interface.search(["Mar", "Wil"], master_key, label)
+    found_locations = findex_interface.search(master_key, label, ["Mar", "Wil"])
     print("Search with auto-completion:")
     for keyword, locations in found_locations.items():
         print("\t", keyword, ":", locations)
@@ -97,7 +97,7 @@ def main(backend: str = "Dict"):
         return True
 
     found_locations = findex_interface.search(
-        ["Mar"], master_key, label, progress_callback=echo_progress_callback
+        master_key, label, ["Mar"], progress_callback=echo_progress_callback
     )
     print("\t Final results:", found_locations)
 

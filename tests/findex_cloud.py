@@ -32,17 +32,18 @@ if __name__ == "__main__":
 
     # Upsert data
     FindexCloud.upsert(
+        token,
+        label,
         {
             Location.from_string("42"): ["John", "Doe"],
             Location.from_string("38"): ["Jane", "Doe"],
         },
-        token,
-        label,
+        {},
         base_url=base_url,
     )
 
     # Search for keyword 'Doe'
-    res = FindexCloud.search(["Doe"], token, label, base_url=base_url)
+    res = FindexCloud.search(token, label, ["Doe"], base_url=base_url)
     assert len(res["Doe"]) == 2
 
     print("Results:", res)
