@@ -276,6 +276,9 @@ class TestFindexSQLite(unittest.TestCase):
         }
         self.interface.upsert(self.mk, self.label, indexed_values_and_keywords, {})
 
+        res = self.interface.search(self.mk, self.label, ["Sheperd"])
+        self.assertEqual(len(res["Sheperd"]), 2)
+
         # Remove one line in the database before compacting
         self.interface.remove_users([b"1"])
         new_label = Label.random()
@@ -284,15 +287,15 @@ class TestFindexSQLite(unittest.TestCase):
 
         # only one result left for `Sheperd`
         res = self.interface.search(new_mk, new_label, ["Sheperd"])
-        self.assertEqual(len(res), 1)
+        self.assertEqual(len(res["Sheperd"]), 1)
 
         # searching with old label will fail
         res = self.interface.search(new_mk, self.label, ["Sheperd"])
-        self.assertEqual(len(res), 0)
+        self.assertEqual(len(res["Sheperd"]), 0)
 
         # searching with old key will fail
         res = self.interface.search(self.mk, new_label, ["Sheperd"])
-        self.assertEqual(len(res), 0)
+        self.assertEqual(len(res["Sheperd"]), 0)
 
 
 class TestFindexNonRegressionTest(unittest.TestCase):
