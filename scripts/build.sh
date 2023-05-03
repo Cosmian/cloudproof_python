@@ -9,7 +9,7 @@ doc=0                # make doc
 cd "$(dirname "$0")/.."
 
 # Setup python virtual environment
-venv_dir="$(pwd)/venv"
+venv_dir="$(pwd)/build/venv"
 rm -rf "$venv_dir"
 mkdir -p "$venv_dir"
 python3 -m venv "$venv_dir"
