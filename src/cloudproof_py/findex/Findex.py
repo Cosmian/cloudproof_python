@@ -118,7 +118,6 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
         master_key: MasterKey,
         label: Label,
         keywords: Sequence[Union[Keyword, str]],
-        max_result_per_keyword: int = 2**32 - 1,
         progress_callback: Optional[Callable[[ProgressResults], bool]] = None,
     ) -> SearchResults:
         """Recursively search Findex graphs for `Locations` corresponding to the given `Keyword`.
@@ -127,9 +126,6 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             keywords (List[Keyword | str]): keywords to search using Findex.
             master_key (MasterKey): user secret key.
             label (Label): public label used in keyword hashing.
-            max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
-            max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
-            fetch_chains_batch_size (int, optional): batch size during fetch chain.
             progress_callback (Callable[[Dict[str, List[IndexedValue]]], bool], optional): callback
                 to process intermediate search results.
 
@@ -140,7 +136,6 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             master_key,
             label,
             keywords,
-            max_result_per_keyword,
             progress_callback,
         )
 
