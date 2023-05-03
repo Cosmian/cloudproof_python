@@ -10,6 +10,7 @@ if __name__ == "__main__":
         "cloudproof_cover_crypt": f"{SRC_DIR}/cover_crypt",
         "cloudproof_findex": f"{SRC_DIR}/findex",
         "cloudproof_fpe": f"{SRC_DIR}/cloudproof_fpe",
+        "cloudproof_anonymization": f"{SRC_DIR}/anonymization",
         "cosmian_kms": f"{SRC_DIR}/kms",
     }
 

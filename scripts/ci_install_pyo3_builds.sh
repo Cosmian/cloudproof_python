@@ -8,9 +8,9 @@ install_lib() {
         rm linux.zip && rm -rf x86_64*
 }
 
-install_lib "v2.0.0"
+install_lib "v1.4.0"
 if [ $? -ne 0 ]; then
-    install_lib "last_build/fix/update_findex"
+    install_lib "last_build/feature/rust_anonymization"
 fi
 
 exit 0
