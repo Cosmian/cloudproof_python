@@ -1,17 +1,48 @@
-name: Publish
+name: Build doc, release and publish
 
-on:
-  push:
-    tags:
-      - '*'
+on: [push]
 
 jobs:
-  release:
+  build_doc:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Release
+      - uses: actions/setup-python@v3
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          scripts/ci_install_pyo3_builds.sh
+          pip install -r docs/requirements.txt
+      - name: Build package
+        run: |
+          python scripts/extract_lib_types.py
+          cd docs
+          make html
+          cd _build
+          zip -r ../../Documentation.zip html/
+      - uses: actions/upload-artifact@v3
+        with:
+          name: html_doc
+          path: Documentation.zip
+          retention-days: 1
+
+  release:
+    needs: build_doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: html_doc
+          path: .
+      - name: Release on tags, attach asset on release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
+        with:
+          files: Documentation.zip
 
   publish:
     runs-on: ubuntu-latest
@@ -27,29 +58,8 @@ jobs:
           pip install twine
           python -m build
       - name: Upload to Pypi
+        if: startsWith(github.ref, 'refs/tags/')
         run: twine upload -u "${PYPI_USERNAME}" -p "${PYPI_PASSWORD}" dist/cloudproof_py*.whl
         env:
           PYPI_USERNAME: ${{ secrets.PYPI_USERNAME }}
           PYPI_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-
-  docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-          python-version: 3.7
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          scripts/ci_install_pyo3_builds.sh
-          pip install -r docs/requirements.txt
-      - name: Build package
-        run: |
-          python scripts/extract_lib_types.py
-          cd docs && make html
-      - uses: actions/upload-artifact@v3
-        with:
-          name: html_doc
-          path: docs/_build/html
-          retention-days: 60
