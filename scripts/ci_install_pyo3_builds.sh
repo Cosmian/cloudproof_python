@@ -8,7 +8,7 @@ install_lib() {
         rm linux.zip && rm -rf x86_64*
 }
 
-install_lib "v1.4.0"
+install_lib "v2.1.0"
 if [ $? -ne 0 ]; then
     install_lib "last_build/feature/rust_anonymization"
 fi

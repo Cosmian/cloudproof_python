@@ -39,8 +39,7 @@ def parse_noise_options(
     Returns a `NoiseGenerator` object based on the specified options.
 
     Args:
-        method (str): The distribution to use for generating noise.
-        option_type (str): Whether the noise options are specified as parameters or bounds.
+        method (str): The distribution to use for generating noise: "Uniform", "Gaussian", or "Laplace".
         mean (float, optional): The mean value to use for generating noise if `option_type` is `params`.
         std_dev (float, optional): The standard deviation value to use for generating noise if `option_type` is `params`.
         min_bound (float, optional): The minimum value to use for generating noise if `option_type` is `bounds`.
