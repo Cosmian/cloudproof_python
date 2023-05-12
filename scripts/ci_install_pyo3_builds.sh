@@ -8,9 +8,9 @@ install_lib() {
         rm linux.zip && rm -rf x86_64*
 }
 
-install_lib "v1.2.1"
+install_lib "v2.0.0"
 if [ $? -ne 0 ]; then
-    install_lib "last_build/improve_ffi_errors"
+    install_lib "last_build/fix/update_findex"
 fi
 
 exit 0

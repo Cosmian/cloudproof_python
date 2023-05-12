@@ -132,7 +132,7 @@ if __name__ == "__main__":
     }
     # Upsert keywords
     findex_interface.upsert(
-        mapping_indexed_values_to_keywords, findex_master_key, findex_label
+        findex_master_key, findex_label, mapping_indexed_values_to_keywords, {}
     )
     print("Findex: Done indexing", len(users), "users")
     print(
@@ -142,9 +142,10 @@ if __name__ == "__main__":
     if activate_auto_completion:
         keywords = [keyword.lower() for user in users for keyword in user.values()]
         findex_interface.upsert(
-            findex.utils.generate_auto_completion(keywords),
             findex_master_key,
             findex_label,
+            findex.utils.generate_auto_completion(keywords),
+            {},
         )
 
     cc_user_keys = {"Alice": key_Alice, "Bob": key_Bob, "Charlie": key_Charlie}
@@ -168,7 +169,7 @@ if __name__ == "__main__":
 
         # 1. Findex search
         found_users = findex_interface.search(
-            [keyword], findex_master_key, findex_label
+            findex_master_key, findex_label, [keyword]
         )
         if len(found_users) == 0:
             print(colored("No user found!", "red", attrs=["bold"]))

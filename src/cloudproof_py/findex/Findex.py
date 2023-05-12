@@ -32,19 +32,22 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
 
     def upsert(
         self,
-        indexed_values_and_keywords: IndexedValuesAndKeywords,
         master_key: MasterKey,
         label: Label,
+        additions: IndexedValuesAndKeywords,
+        deletions: IndexedValuesAndKeywords,
     ) -> None:
         """Upserts the given relations between `IndexedValue` and `Keyword` into Findex tables.
 
         Args:
-            indexed_values_and_keywords (Dict[Location | Keyword, List[Keyword | str]]):
-                map of `IndexedValue` to a list of `Keyword`
             master_key (MasterKey): the user master key
             label (Label): label used to allow versioning
+            additions (Dict[Location | Keyword, List[Keyword | str]]):
+                map of `IndexedValue` to a list of `Keyword` to add to the index
+            deletions (Dict[Location | Keyword, List[Keyword | str]]):
+                map of `IndexedValue` to a list of `Keyword` to delete from the index
         """
-        self.findex_core.upsert_wrapper(indexed_values_and_keywords, master_key, label)
+        self.findex_core.upsert_wrapper(master_key, label, additions, deletions)
 
     @abstractmethod
     def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
@@ -112,12 +115,9 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
 
     def search(
         self,
-        keywords: Sequence[Union[Keyword, str]],
         master_key: MasterKey,
         label: Label,
-        max_result_per_keyword: int = 2**32 - 1,
-        max_depth: int = 100,
-        fetch_chains_batch_size: int = 0,
+        keywords: Sequence[Union[Keyword, str]],
         progress_callback: Optional[Callable[[ProgressResults], bool]] = None,
     ) -> SearchResults:
         """Recursively search Findex graphs for `Locations` corresponding to the given `Keyword`.
@@ -126,9 +126,6 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             keywords (List[Keyword | str]): keywords to search using Findex.
             master_key (MasterKey): user secret key.
             label (Label): public label used in keyword hashing.
-            max_result_per_keyword (int, optional): maximum number of results to fetch per keyword.
-            max_depth (int, optional): maximum recursion level allowed. Defaults to 100.
-            fetch_chains_batch_size (int, optional): batch size during fetch chain.
             progress_callback (Callable[[Dict[str, List[IndexedValue]]], bool], optional): callback
                 to process intermediate search results.
 
@@ -136,12 +133,9 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
             Dict[Keyword, List[Location]]: `Locations` found by `Keyword`
         """
         return self.findex_core.search_wrapper(
-            keywords,
             master_key,
             label,
-            max_result_per_keyword,
-            max_depth,
-            fetch_chains_batch_size,
+            keywords,
             progress_callback,
         )
 
@@ -273,10 +267,10 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
 
     def compact(
         self,
-        num_reindexing_before_full_set: int,
         master_key: MasterKey,
         new_master_key: MasterKey,
         new_label: Label,
+        num_reindexing_before_full_set: int,
     ) -> None:
         """Performs compacting on the entry and chain tables.
 
@@ -288,5 +282,5 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
             new_label (Label): newly generated label
         """
         self.findex_core.compact_wrapper(
-            num_reindexing_before_full_set, master_key, new_master_key, new_label
+            master_key, new_master_key, new_label, num_reindexing_before_full_set
         )

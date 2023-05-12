@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Features
+
+- upgrade Findex (v3.0.0 -> v4.0.0):
+  - change indexed values size (require a reset of the index database)
+  - change search interface
+    - change parameter order
+    - remove `max_result_per_keyword`
+    - remove `max_depth`
+    - remove `fetch_chains_batch_size`
+    - searching for a non indexed keyword leads to an empty array for this
+      keyword in the search results instead of this keyword being missing from
+      the results.
+  - change upsert interface:
+    - change parameter order
+    - add deletions
+  - change compact interface:
+    - change parameter order
+
 ---
 
 ## [3.1.0] - 2023-04-06
