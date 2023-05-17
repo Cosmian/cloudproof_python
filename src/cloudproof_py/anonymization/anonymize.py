@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 from datetime import timezone
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 from cloudproof_anonymization import (
@@ -28,14 +28,13 @@ DURATION_IN_SECONDS = {
 }
 
 
-def parse_noise_options(
+def create_noise_generator(
     distribution: str,
     mean: Optional[float] = None,
     std_dev: Optional[float] = None,
     lower_boundary: Optional[float] = None,
     upper_boundary: Optional[float] = None,
-    correlation: Optional[str] = None,
-):
+) -> NoiseGenerator:
     """
     Returns a `NoiseGenerator` object based on the specified options.
 
@@ -56,31 +55,15 @@ def parse_noise_options(
         raise ValueError("Missing noise options.")
 
 
-def date_to_rfc3339(date_str: str) -> str:
-    """
-    Converts a date string to ISO format with timezone (RFC 3339).
-
-    Args:
-        date_str (str): The input date string.
-
-    Returns:
-        str: The date string in RFC3339 format.
-    """
-    dt = date_parser.parse(date_str)
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.isoformat()
-
-
-def parse_date_noise_options(
+def create_date_noise_generator(
     distribution: str,
     mean: Optional[Dict] = None,
     std_dev: Optional[Dict] = None,
     lower_boundary: Optional[Dict] = None,
     upper_boundary: Optional[Dict] = None,
-) -> Callable[[str], str]:
+) -> NoiseGenerator:
     """
-    Returns a lambda function that takes a date string and returns a noisy version of that date.
+    Returns a `NoiseGenerator` object based on the specified options.
 
     Args:
         distribution (str): A string indicating the distribution to use for generating noise.
@@ -114,7 +97,7 @@ def parse_date_noise_options(
             upper_boundary["precision"] * DURATION_IN_SECONDS[upper_boundary["unit"]]
         )
 
-    noise_generator = parse_noise_options(
+    return create_noise_generator(
         distribution,
         mean=mean_secs,
         std_dev=std_dev_secs,
@@ -122,11 +105,146 @@ def parse_date_noise_options(
         upper_boundary=upper_boundary_secs,
     )
 
-    # Define a lambda function that applies the noise generator to the ISO-formatted date
-    return lambda date_str: noise_generator.apply_on_date(date_to_rfc3339(date_str))
+
+class NoiseCorrelationTask:
+    """
+    Class representing a noise correlation task.
+    """
+
+    def __init__(self, method: str, opts: Dict):
+        """
+        Initialize a NoiseCorrelationTask.
+
+        Args:
+            method (str): The noise distribution.
+            opts (Dict): Options for the noise generation.
+        """
+        self.method = method
+        # The `correlation` keyword is not used to create the generator
+        self.options = {
+            key: value for key, value in opts.items() if key != "correlation"
+        }
+        self.column_names: List[str] = []
+
+    def add_column(self, column_name: str):
+        """
+        Add a column name to the list of column names.
+
+        Args:
+            column_name (str): The column name to add.
+        """
+        self.column_names.append(column_name)
+
+    def generate_transformation(self) -> Callable[[List], List]:
+        """
+        Generate and return the transformation function for applying correlated noise.
+
+        Returns:
+            Callable[[List], List]: The transformation function.
+        """
+        # Mapping of noise method to noise generator functions
+        noise_func_mapping: Dict[str, Callable] = {
+            "NoiseDate": lambda **kwargs: create_date_noise_generator(
+                **kwargs
+            ).apply_correlated_noise_on_dates,
+            "NoiseInteger": lambda **kwargs: create_noise_generator(
+                **kwargs
+            ).apply_correlated_noise_on_ints,
+            "NoiseFloat": lambda **kwargs: create_noise_generator(
+                **kwargs
+            ).apply_correlated_noise_on_floats,
+        }
+        # Get the noise generator function based on the specified method
+        noise_generator_func = noise_func_mapping.get(self.method)
+        if noise_generator_func is None:
+            raise ValueError(f"Cannot apply correlation for method: {self.method}")
+
+        # Scale noise by 1 for now
+        correlation_factors = [1] * len(self.column_names)
+        # Create a noise generator instance with the specified options
+        noise_generator = noise_generator_func(**self.options)
+        # Return a lambda function that applies the noise generator to the data vector
+        return lambda data_vec: noise_generator(data_vec, correlation_factors)
 
 
-def parse_date_aggregation_options(time_unit: str):
+def parse_noise_correlation_config(config: Dict) -> Dict[str, NoiseCorrelationTask]:
+    """
+    Parse the noise correlation configuration and return the dictionary of correlation tasks.
+
+    Args:
+        config (Dict): The noise correlation configuration.
+
+    Returns:
+        Dict[str, NoiseCorrelationTask]: The dictionary of correlation tasks.
+    """
+    tasks: Dict[str, NoiseCorrelationTask] = {}
+
+    # Iterate over each column metadata in the configuration
+    for column_metadata in config["metadata"]:
+        col_name: str = column_metadata["name"]
+
+        # Check if method and method_options are present
+        if "method" not in column_metadata or "method_options" not in column_metadata:
+            continue
+
+        method_name: str = column_metadata["method"]
+        method_opts = column_metadata["method_options"]
+
+        # Check if correlation option is present
+        if "correlation" not in method_opts:
+            continue
+
+        correlation_uid = method_opts["correlation"]
+
+        # Create or retrieve the correlation task based on correlation_uid
+        if correlation_uid not in tasks:
+            tasks[correlation_uid] = NoiseCorrelationTask(method_name, method_opts)
+
+        # Add the current column to the correlation task
+        tasks[correlation_uid].add_column(col_name)
+
+    return tasks
+
+
+def date_to_rfc3339(date_str: str) -> str:
+    """
+    Converts a date string to ISO format with timezone (RFC 3339).
+
+    Args:
+        date_str (str): The input date string.
+
+    Returns:
+        str: The date string in RFC3339 format.
+    """
+    dt = date_parser.parse(date_str)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
+
+
+def parse_date_noise_options(**kwargs) -> Callable[[str], str]:
+    """
+    Returns a lambda function that takes a date string and returns a noisy version of that date.
+
+    Args:
+        distribution (str): A string indicating the distribution to use for generating noise.
+        mean (float, optional): The mean value to use for generating noise.
+        std_dev (Dict, optional): A dictionary with the following keys:
+            - precision (float): The precision value for the noise generator.
+            - unit (str): A string indicating the unit of time for the noise generator.
+        min_bound (Dict, optional):
+            - precision (float): The precision value for the minimum bound.
+            - unit (str): A string indicating the unit of time for the minimum bound.
+        max_bound (Dict, optional):
+            - precision (float): The precision value for the maximum bound.
+            - unit (str): A string indicating the unit of time for the maximum bound.
+    """
+    return lambda date_str: create_date_noise_generator(**kwargs).apply_on_date(
+        date_to_rfc3339(date_str)
+    )
+
+
+def parse_date_aggregation_options(time_unit: str) -> Callable[[str], str]:
     """
     Parses the date aggregation options and returns a function that applies the aggregation.
 
@@ -185,8 +303,8 @@ def create_transformation_function(method_name: str, method_opts: Dict) -> Calla
         "Regex": lambda **kwargs: WordPatternMasker(**kwargs).apply,
         "Hash": parse_hash_options,
         "NoiseDate": parse_date_noise_options,
-        "NoiseInteger": lambda **kwargs: parse_noise_options(**kwargs).apply_on_int,
-        "NoiseFloat": lambda **kwargs: parse_noise_options(**kwargs).apply_on_float,
+        "NoiseInteger": lambda **kwargs: create_noise_generator(**kwargs).apply_on_int,
+        "NoiseFloat": lambda **kwargs: create_noise_generator(**kwargs).apply_on_float,
         "AggregationDate": parse_date_aggregation_options,
         "AggregationInteger": lambda **kwargs: NumberAggregator(**kwargs).apply_on_int,
         "AggregationFloat": lambda **kwargs: NumberAggregator(**kwargs).apply_on_float,
@@ -196,6 +314,7 @@ def create_transformation_function(method_name: str, method_opts: Dict) -> Calla
     parsing_function = parsing_functions.get(method_name)
     if parsing_function is None:
         raise ValueError(f"Unknown method named: {method_name}.")
+
     return parsing_function(**method_opts)
 
 
@@ -234,11 +353,23 @@ def anonymize_dataframe(
             if "method_options" in column_metadata
             else {}
         )
-
+        if "correlation" in method_opts:
+            # Skip correlation for now
+            continue
         # Create a transformation function based on the selected technique.
         transform_func = create_transformation_function(method_name, method_opts)
-        anonymized_df[col_name] = df[col_name].apply(transform_func)
+        anonymized_df[col_name] = df[col_name].map(transform_func)
 
+    # Noise correlation
+
+    # Read through the config to find all correlation tasks
+    noise_corr_tasks = parse_noise_correlation_config(config)
+    # Apply correlation on each groups
+    for correlation_task in noise_corr_tasks.values():
+        transform_func = correlation_task.generate_transformation()
+        anonymized_df[correlation_task.column_names] = df[
+            correlation_task.column_names
+        ].apply(transform_func, axis=1, raw=True)
     return anonymized_df
 
 
