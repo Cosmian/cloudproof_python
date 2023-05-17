@@ -14,7 +14,7 @@ from cloudproof_anonymization import (
     WordPatternMasker,
     WordTokenizer,
 )
-from cloudproof_fpe import Alphabet, Integer
+from cloudproof_fpe import Alphabet, Float, Integer
 from dateutil import parser as date_parser
 from humps import decamelize
 
@@ -34,6 +34,7 @@ def parse_noise_options(
     std_dev: Optional[float] = None,
     lower_boundary: Optional[float] = None,
     upper_boundary: Optional[float] = None,
+    correlation: Optional[str] = None,
 ):
     """
     Returns a `NoiseGenerator` object based on the specified options.
@@ -53,6 +54,22 @@ def parse_noise_options(
         )
     else:
         raise ValueError("Missing noise options.")
+
+
+def date_to_rfc3339(date_str: str) -> str:
+    """
+    Converts a date string to ISO format with timezone (RFC 3339).
+
+    Args:
+        date_str (str): The input date string.
+
+    Returns:
+        str: The date string in RFC3339 format.
+    """
+    dt = date_parser.parse(date_str)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.isoformat()
 
 
 def parse_date_noise_options(
@@ -105,15 +122,20 @@ def parse_date_noise_options(
         upper_boundary=upper_boundary_secs,
     )
 
-    def date_to_isoformat(date_str: str) -> str:
-        # Convert the date string to ISO format with timezone.
-        dt = date_parser.parse(date_str)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.isoformat()
-
     # Define a lambda function that applies the noise generator to the ISO-formatted date
-    return lambda date_str: noise_generator.apply_on_date(date_to_isoformat(date_str))
+    return lambda date_str: noise_generator.apply_on_date(date_to_rfc3339(date_str))
+
+
+def parse_date_aggregation_options(time_unit: str):
+    """
+    Parses the date aggregation options and returns a function that applies the aggregation.
+
+    Args:
+        time_unit (str): The time unit for rounding.
+    """
+    return lambda date_str: DateAggregator(time_unit).apply_on_date(
+        date_to_rfc3339(date_str)
+    )
 
 
 def parse_fpe_string_options(alphabet: str) -> Callable[[str], str]:
@@ -124,6 +146,11 @@ def parse_fpe_string_options(alphabet: str) -> Callable[[str], str]:
 def parse_fpe_integer_options(radix: int, digit: int) -> Callable[[int], int]:
     # TODO: what about key and tweak?
     return lambda val: Integer(radix, digit).encrypt(b"A" * 32, bytes([10]), val)
+
+
+def parse_fpe_float_options() -> Callable[[float], float]:
+    # TODO: what about key and tweak?
+    return lambda val: Float().encrypt(b"A" * 32, bytes([10]), val)
 
 
 def parse_hash_options(
@@ -152,6 +179,7 @@ def create_transformation_function(method_name: str, method_opts: Dict) -> Calla
     parsing_functions: Dict[str, Callable] = {
         "FpeString": parse_fpe_string_options,
         "FpeInteger": parse_fpe_integer_options,
+        "FpeFloat": parse_fpe_float_options,
         "TokenizeWords": lambda **kwargs: WordTokenizer(**kwargs).apply,
         "MaskWords": lambda **kwargs: WordMasker(**kwargs).apply,
         "Regex": lambda **kwargs: WordPatternMasker(**kwargs).apply,
@@ -159,7 +187,7 @@ def create_transformation_function(method_name: str, method_opts: Dict) -> Calla
         "NoiseDate": parse_date_noise_options,
         "NoiseInteger": lambda **kwargs: parse_noise_options(**kwargs).apply_on_int,
         "NoiseFloat": lambda **kwargs: parse_noise_options(**kwargs).apply_on_float,
-        "AggregationDate": lambda **kwargs: DateAggregator(**kwargs).apply_on_date,
+        "AggregationDate": parse_date_aggregation_options,
         "AggregationInteger": lambda **kwargs: NumberAggregator(**kwargs).apply_on_int,
         "AggregationFloat": lambda **kwargs: NumberAggregator(**kwargs).apply_on_float,
         "RescalingInteger": lambda **kwargs: NumberScaler(**kwargs).apply_on_int,
@@ -190,8 +218,22 @@ def anonymize_dataframe(
     # Iterate over each column to anonymize.
     for column_metadata in config["metadata"]:
         col_name: str = column_metadata["name"]
+        if col_name not in df:
+            # Column missing from the dataset
+            # TODO: Error out?
+            print(f"Column {col_name} not found in data, skipping it")
+            continue
+
+        if "method" not in column_metadata:
+            # No method to apply for this column
+            anonymized_df[col_name] = df[col_name]
+            continue
         method_name: str = column_metadata["method"]
-        method_opts: Dict = column_metadata["method_options"]
+        method_opts: Dict = (
+            column_metadata["method_options"]
+            if "method_options" in column_metadata
+            else {}
+        )
 
         # Create a transformation function based on the selected technique.
         transform_func = create_transformation_function(method_name, method_opts)
@@ -228,7 +270,7 @@ def anonymize(config_path: str, data_path: str, output_path: str) -> None:
 
 if __name__ == "__main__":
     anonymize(
-        "./tests/data/anonymization/config3.json",
-        "./tests/data/anonymization/data.csv",
+        "./tests/data/anonymization/config-correlated.json",
+        "./tests/data/anonymization/data-correlated.csv",
         "./tests/data/anonymization/out.csv",
     )
