@@ -157,7 +157,7 @@ class NoiseCorrelationTask:
         # Get the noise generator function based on the specified method
         noise_generator_func = noise_func_mapping.get(self.method)
         if noise_generator_func is None:
-            raise ValueError(f"Cannot apply correlation for method: {self.method}")
+            raise ValueError(f"Cannot apply correlation for method: {self.method}.")
 
         # Scale noise by 1 for now
         correlation_factors = [1] * len(self.column_names)
@@ -287,7 +287,7 @@ def parse_hash_options(
         salt = salt_value.encode("utf-8")
     hasher = Hasher(hash_type, salt)
 
-    return lambda val: hasher.apply(val.encode(encoding))
+    return lambda val: hasher.apply(str(val).encode(encoding))
 
 
 def create_transformation_function(method_name: str, method_opts: Dict) -> Callable:
@@ -339,9 +339,7 @@ def anonymize_dataframe(
         col_name: str = column_metadata["name"]
         if col_name not in df:
             # Column missing from the dataset
-            # TODO: Error out?
-            print(f"Column {col_name} not found in data, skipping it")
-            continue
+            raise ValueError(f"Missing column from data: {col_name}.")
 
         if "method" not in column_metadata:
             # No method to apply for this column
@@ -388,8 +386,7 @@ def anonymize(config_path: str, data_path: str, output_path: str) -> None:
     with open(config_path, "r") as f:
         conf = decamelize(json.load(f))
 
-    # TODO: get separator from JSON
-    df = pd.read_csv(data_path, sep=";")
+    df = pd.read_csv(data_path, sep=conf["configuration_info"]["delimiter"])
 
     # Anonymize the data according to the configuration.
     anonymized_df = anonymize_dataframe(df, conf)
@@ -401,7 +398,7 @@ def anonymize(config_path: str, data_path: str, output_path: str) -> None:
 
 if __name__ == "__main__":
     anonymize(
-        "./tests/data/anonymization/config-correlated.json",
+        "./tests/data/anonymization/config-sep.json",
         "./tests/data/anonymization/data-correlated.csv",
         "./tests/data/anonymization/out.csv",
     )
