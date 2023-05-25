@@ -17,20 +17,20 @@ from cloudproof_py.anonymization import (
 class TestHasher(unittest.TestCase):
     def test_sha2(self) -> None:
         hasher = Hasher("SHA2")
-        res = hasher.apply(b"test sha2")
+        res = hasher.apply_str("test sha2")
         self.assertEqual(res, "Px0txVYqBePXWF5K4xFn0Pa2mhnYA/jfsLtpIF70vJ8=")
 
         hasher = Hasher("SHA2", b"example salt")
-        res = hasher.apply(b"test sha2")
+        res = hasher.apply_str("test sha2")
         self.assertEqual(res, "d32KiG7kpZoaU2/Rqa+gbtaxDIKRA32nIxwhOXCaH1o=")
 
     def test_sha3(self) -> None:
         hasher = Hasher("SHA3")
-        res = hasher.apply(b"test sha3")
+        res = hasher.apply_str("test sha3")
         self.assertEqual(res, "b8rRtRqnSFs8s12jsKSXHFcLf5MeHx8g6m4tvZq04/I=")
 
         hasher = Hasher("SHA3", b"example salt")
-        res = hasher.apply(b"test sha3")
+        res = hasher.apply_str("test sha3")
         self.assertEqual(res, "UBtIW7mX+cfdh3T3aPl/l465dBUbgKKZvMjZNNjwQ50=")
 
     def test_argon2(self) -> None:
@@ -39,7 +39,7 @@ class TestHasher(unittest.TestCase):
             hasher = Hasher("Argon2")
 
         hasher = Hasher("Argon2", b"example salt")
-        res = hasher.apply(b"low entropy data")
+        res = hasher.apply_str("low entropy data")
         self.assertEqual(res, "JXiQyIYJAIMZoDKhA/BOKTo+142aTkDvtITEI7NXDEM=")
 
 
@@ -286,9 +286,8 @@ class TestAggregator(unittest.TestCase):
             aggregator.apply_on_date("2023-04-27T16:23:45")
 
         # Wrong time unit
-        aggregator = DateAggregator("InvalidUnit")
         with self.assertRaises(Exception):
-            aggregator.apply_on_date("2023-04-27T16:23:45Z")
+            aggregator = DateAggregator("InvalidUnit")
 
 
 class TestNumberScaler(unittest.TestCase):
