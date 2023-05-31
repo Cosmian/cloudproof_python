@@ -4,7 +4,7 @@ import os
 import sqlite3
 import unittest
 from base64 import b64decode
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple, Sequence
 
 from cloudproof_py.findex import Findex, Keyword, Label, Location, MasterKey
 from cloudproof_py.findex.typing import IndexedValuesAndKeywords, ProgressResults
@@ -39,14 +39,16 @@ sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
 class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompact):
     # Start implementing Findex methods
 
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(
+        self, entry_uids: List[bytes]
+    ) -> Sequence[Tuple[bytes, bytes]]:
         """Query the entry table
 
         Args:
             entry_uids (List[bytes]): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]
+            Sequence[Tuple[bytes, bytes]]
         """
         str_uids = ",".join("?" * len(entry_uids))
         cur = self.conn.execute(
@@ -54,9 +56,9 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
             entry_uids,
         )
         values = cur.fetchall()
-        output_dict = {}
+        output_dict = []
         for value in values:
-            output_dict[value[0]] = value[1]
+            output_dict.append((value[0], value[1]))
         return output_dict
 
     def fetch_all_entry_table_uids(self) -> Set[bytes]:

@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [4.0.0] - 2023-06-01
 
 ### Features
 
@@ -21,6 +21,11 @@ All notable changes to this project will be documented in this file.
     - add deletions
   - change compact interface:
     - change parameter order
+- add data anonymization methods such as:
+  - noise methods
+  - hash methods
+  - number methods
+  - word methods
 
 ---
 

@@ -50,14 +50,16 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
         self.findex_core.upsert_wrapper(master_key, label, additions, deletions)
 
     @abstractmethod
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(
+        self, entry_uids: List[bytes]
+    ) -> Sequence[Tuple[bytes, bytes]]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]: uid -> value mapping
+           Sequence[Tuple[bytes, bytes]]: uid -> value mapping
         """
 
     @abstractmethod
@@ -92,14 +94,16 @@ class FindexSearch(FindexBase, metaclass=ABCMeta):
         )
 
     @abstractmethod
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(
+        self, entry_uids: List[bytes]
+    ) -> Sequence[Tuple[bytes, bytes]]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]: uid -> value mapping
+            Sequence[Tuple[bytes, bytes]]: uid -> value mapping
         """
 
     @abstractmethod
@@ -154,14 +158,16 @@ class FindexCompact(FindexBase, metaclass=ABCMeta):
         )
 
     @abstractmethod
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(
+        self, entry_uids: List[bytes]
+    ) -> Sequence[Tuple[bytes, bytes]]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes]): uids to query
 
         Returns:
-            Dict[bytes, bytes]: uid -> value mapping
+            Sequence[Tuple[bytes, bytes]]: uid -> value mapping
         """
 
     @abstractmethod

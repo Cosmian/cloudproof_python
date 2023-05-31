@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from cloudproof_py.findex import Findex
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Sequence
 
 
 class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
@@ -14,19 +14,21 @@ class FindexDict(Findex.FindexUpsert, Findex.FindexSearch):
         self.chain_table: Dict[bytes, bytes] = {}
 
     # Implement callback functions
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(
+        self, entry_uids: List[bytes]
+    ) -> Sequence[Tuple[bytes, bytes]]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]: uid -> value mapping
+            Sequence[Tuple[bytes, bytes]]: uid -> value mapping
         """
-        res = {}
+        res = []
         for uid in entry_uids:
             if uid in self.entry_table:
-                res[uid] = self.entry_table[uid]
+                res.append((uid, self.entry_table[uid]))
         return res
 
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
