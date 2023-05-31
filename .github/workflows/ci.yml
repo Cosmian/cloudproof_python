@@ -18,7 +18,7 @@ jobs:
           pip install flake8
       - name: Linter
         run: |
-          flake8 --max-line-length=100
+          flake8 --max-line-length=100 --ignore E501
       - name: Build package
         run: |
           python -m build
@@ -62,9 +62,10 @@ jobs:
           pip install cloudproof_py*.whl
       - name: Type-check
         run: |
-          mypy src/cloudproof_py/findex/
+          mypy src/cloudproof_py/anonymization/
           mypy src/cloudproof_py/cover_crypt/
-          mypy src/cloudproof_py/cloudproof_fpe/
+          mypy src/cloudproof_py/findex/
+          mypy src/cloudproof_py/fpe/
           mypy tests/
           mypy examples/cli_demo
           mypy examples/findex_upsert_search

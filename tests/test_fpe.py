@@ -2,7 +2,7 @@
 import os
 import unittest
 
-from cloudproof_py.cloudproof_fpe import Alphabet, Float, Integer
+from cloudproof_py.fpe import Alphabet, Float, Integer
 
 KEY_LENGTH = 32
 KEY = os.urandom(KEY_LENGTH)
