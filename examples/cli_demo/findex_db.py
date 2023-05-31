@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import sqlite3
-from cloudproof_py.findex import Findex
+from typing import Dict, List, Set, Tuple, Sequence
 
-from typing import Dict, List, Set, Tuple
+from cloudproof_py.findex import Findex
 
 
 class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
@@ -12,14 +12,16 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
         super().__init__()
         self.conn = db_conn
 
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(
+        self, entry_uids: List[bytes]
+    ) -> Sequence[Tuple[bytes, bytes]]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]: uid -> value mapping
+            Sequence[Tuple[bytes, bytes]]: uid -> value mapping
         """
         str_uids = ",".join("?" * len(entry_uids))
         cur = self.conn.execute(
@@ -27,10 +29,10 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch):
             entry_uids,
         )
         values = cur.fetchall()
-        output_dict = {}
+        output_array = []
         for value in values:
-            output_dict[value[0]] = value[1]
-        return output_dict
+            output_array.append((value[0], value[1]))
+        return output_array
 
     def fetch_all_entry_table_uids(self) -> Set[bytes]:
         """Return all UIDs in the Entry Table.

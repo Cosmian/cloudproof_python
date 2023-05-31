@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from cloudproof_py.findex import Findex
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Sequence
 import redis
 
 
@@ -16,20 +16,22 @@ class FindexRedis(Findex.FindexUpsert, Findex.FindexSearch):
         self.prefix_chain = b"chain:"
 
     # Implement callback functions
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(
+        self, entry_uids: List[bytes]
+    ) -> Sequence[Tuple[bytes, bytes]]:
         """Query the Entry Table.
 
         Args:
             entry_uids (List[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
-            Dict[bytes, bytes]: uid -> value mapping
+            Sequence[Tuple[bytes, bytes]]: uid -> value mapping
         """
-        res = {}
+        res = []
         for uid in entry_uids:
             existing_value = self.redis.get(self.prefix_entry + uid)
             if existing_value:
-                res[uid] = existing_value
+                res.append((uid, existing_value))
         return res
 
     def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
