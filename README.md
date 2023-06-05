@@ -61,16 +61,22 @@ examples/cli_demo/run_demo.sh
 To build from source:
 
 ```sh
-scripts/build.sh [-i]
+scripts/build.sh
 ```
-
-**Note**: add `-i` to install after build.
 
 To build and run the tests:
 
 ```sh
+scripts/build.sh -t
+```
+
+With PyO3 packages from [package.cosmian.com](https://package.cosmian.com):
+
+```sh
 scripts/build.sh -it
 ```
+
+**Note**: edit [scripts/ci_install_pyo3_builds.sh](./scripts/ci_install_pyo3_builds.sh) with the right build name.
 
 To build the documentation:
 
@@ -88,6 +94,7 @@ This table shows the minimum version correspondence between the various componen
 
 | `cloudproof_py` | CoverCrypt | Findex      | KMS   |
 | --------------- | ---------- | ----------- | ----- |
+| >=4.0.0         | 11.0.0     | 4.0.0,4.0.1 | 4.3.3 |
 | >=3.0.0         | 11.0.0     | 3.0.0       | 4.3.3 |
 | >=2.0.0         | 10.0.0     | 2.0.1,2.1.0 | 4.2.0 |
 | >=1.0.0         | 8.0.1      | 2.0.0       | -     |
