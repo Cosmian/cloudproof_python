@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.1] - 2023-07-12
+
+### Miscellaneous Tasks
+
+- Bump cosmian-kms 4.4.2. Rebuild without specific cpu flags (related to RUSTFLAGS)
+
 ## [4.0.0] - 2023-06-01
 
 ### Features
