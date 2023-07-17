@@ -31,7 +31,7 @@ jobs:
   test:
     services:
       kms:
-        image: ghcr.io/cosmian/kms:4.4.2
+        image: ghcr.io/cosmian/kms:4.4.3
         env:
           COSMIAN_SERVER_URL: http://localhost:9998
           KMS_PUBLIC_PATH: /tmp
@@ -94,7 +94,7 @@ jobs:
       extension: so
       destination: linux-x86-64
       os: ubuntu-20.04
-      kms-version: 4.4.2
+      kms-version: 4.4.3
       findex-cloud-version: 0.1.0
       copy_fresh_build: false
       copy_regression_files: |
@@ -107,7 +107,7 @@ jobs:
     with:
       branch: develop
       target: wasm32-unknown-unknown
-      kms-version: 4.4.2
+      kms-version: 4.4.3
       findex-cloud-version: 0.1.0
       copy_fresh_build: false
       copy_regression_files: |
