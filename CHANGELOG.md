@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.2] - 2023-07-17
+
+### Miscellaneous Tasks
+
+- Bump cosmian-kms 4.4.3 (works everywhere - no custom cpu flags)
+
 ## [4.0.1] - 2023-07-12
 
 ### Miscellaneous Tasks
