@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from cloudproof_anonymization import (
+    DataHasher,
     DateAggregator,
-    Hasher,
     NoiseGenerator,
     NumberAggregator,
     NumberScaler,
@@ -12,7 +12,7 @@ from cloudproof_anonymization import (
 
 __all__ = [
     "DateAggregator",
-    "Hasher",
+    "DataHasher",
     "NoiseGenerator",
     "NumberAggregator",
     "NumberScaler",
