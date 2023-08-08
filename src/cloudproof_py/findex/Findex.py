@@ -36,7 +36,7 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
         label: Label,
         additions: IndexedValuesAndKeywords,
         deletions: IndexedValuesAndKeywords,
-    ) -> None:
+    ) -> Set[Keyword]:
         """Upserts the given relations between `IndexedValue` and `Keyword` into Findex tables.
 
         Args:
@@ -47,7 +47,7 @@ class FindexUpsert(FindexBase, metaclass=ABCMeta):
             deletions (Dict[Location | Keyword, List[Keyword | str]]):
                 map of `IndexedValue` to a list of `Keyword` to delete from the index
         """
-        self.findex_core.upsert_wrapper(master_key, label, additions, deletions)
+        return self.findex_core.upsert_wrapper(master_key, label, additions, deletions)
 
     @abstractmethod
     def fetch_entry_table(
