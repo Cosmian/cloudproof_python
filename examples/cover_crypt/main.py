@@ -50,23 +50,23 @@ async def main(use_kms: bool = True):
         # Messages encryption
         protected_mkg_data = b"protected_mkg_message"
         protected_mkg_ciphertext = await kms_client.cover_crypt_encryption(
-            public_key_uid,
             "Department::MKG && Security Level::Protected",
             protected_mkg_data,
+            public_key_uid,
         )
 
-        topSecret_mkg_data = b"top_secret_mkg_message"
-        topSecret_mkg_ciphertext = await kms_client.cover_crypt_encryption(
-            public_key_uid,
+        top_secret_mkg_data = b"top_secret_mkg_message"
+        top_secret_mkg_ciphertext = await kms_client.cover_crypt_encryption(
             "Department::MKG && Security Level::Top Secret",
-            topSecret_mkg_data,
+            top_secret_mkg_data,
+            public_key_uid,
         )
 
         protected_fin_data = b"protected_fin_message"
         protected_fin_ciphertext = await kms_client.cover_crypt_encryption(
-            public_key_uid,
             "Department::FIN && Security Level::Protected",
             protected_fin_data,
+            public_key_uid,
         )
 
         # Generating user keys
@@ -86,7 +86,7 @@ async def main(use_kms: bool = True):
 
         # Decryption with the right access policy
         protected_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
-            confidential_mkg_user_uid, protected_mkg_ciphertext
+            protected_mkg_ciphertext, confidential_mkg_user_uid
         )
         assert protected_mkg_plaintext == protected_mkg_data
 
@@ -94,7 +94,7 @@ async def main(use_kms: bool = True):
         try:
             # will throw
             await kms_client.cover_crypt_decryption(
-                confidential_mkg_user_uid, topSecret_mkg_ciphertext
+                top_secret_mkg_ciphertext, confidential_mkg_user_uid
             )
         except Exception as e:
             # ==> the user is not be able to decrypt
@@ -103,7 +103,7 @@ async def main(use_kms: bool = True):
         try:
             # will throw
             await kms_client.cover_crypt_decryption(
-                confidential_mkg_user_uid, protected_fin_ciphertext
+                protected_fin_ciphertext, confidential_mkg_user_uid
             )
         except Exception as e:
             # ==> the user is not be able to decrypt
@@ -113,17 +113,17 @@ async def main(use_kms: bool = True):
         # of all Security Level within the right Department
 
         protected_mkg_plaintext2, _ = await kms_client.cover_crypt_decryption(
-            topSecret_mkg_fin_user_uid, protected_mkg_ciphertext
+            protected_mkg_ciphertext, topSecret_mkg_fin_user_uid
         )
         assert protected_mkg_plaintext2 == protected_mkg_data
 
         topSecret_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
-            topSecret_mkg_fin_user_uid, topSecret_mkg_ciphertext
+            top_secret_mkg_ciphertext, topSecret_mkg_fin_user_uid
         )
-        assert topSecret_mkg_plaintext == topSecret_mkg_data
+        assert topSecret_mkg_plaintext == top_secret_mkg_data
 
         protected_fin_plaintext, _ = await kms_client.cover_crypt_decryption(
-            topSecret_mkg_fin_user_uid, protected_fin_ciphertext
+            protected_fin_ciphertext, topSecret_mkg_fin_user_uid
         )
         assert protected_fin_plaintext == protected_fin_data
 
@@ -132,29 +132,29 @@ async def main(use_kms: bool = True):
         # rotate MKG attribute
         # all active keys will be rekeyed automatically
         await kms_client.rotate_cover_crypt_attributes(
-            private_key_uid, ["Department::MKG"]
+            ["Department::MKG"], private_key_uid
         )
 
         # New confidential marketing message
 
         confidential_mkg_data = b"confidential_secret_mkg_message"
         confidential_mkg_ciphertext = await kms_client.cover_crypt_encryption(
-            public_key_uid,
             "Department::MKG && Security Level::Confidential",
             confidential_mkg_data,
+            public_key_uid,
         )
 
         # Decrypting the messages with the rekeyed key
 
         # decrypting the "old" `protected marketing` message
         old_protected_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
-            confidential_mkg_user_uid, protected_mkg_ciphertext
+            protected_mkg_ciphertext, confidential_mkg_user_uid
         )
         assert old_protected_mkg_plaintext == protected_mkg_data
 
         # decrypting the "new" `confidential marketing` message
         new_confidential_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
-            confidential_mkg_user_uid, confidential_mkg_ciphertext
+            confidential_mkg_ciphertext, confidential_mkg_user_uid
         )
         assert new_confidential_mkg_plaintext == confidential_mkg_data
 
@@ -173,12 +173,12 @@ async def main(use_kms: bool = True):
             protected_mkg_data,
         )
 
-        topSecret_mkg_data = b"top_secret_mkg_message"
-        topSecret_mkg_ciphertext = cover_crypt.encrypt(
+        top_secret_mkg_data = b"top_secret_mkg_message"
+        top_secret_mkg_ciphertext = cover_crypt.encrypt(
             policy,
             "Department::MKG && Security Level::Top Secret",
             public_key,
-            topSecret_mkg_data,
+            top_secret_mkg_data,
         )
 
         protected_fin_data = b"protected_fin_message"
@@ -211,7 +211,7 @@ async def main(use_kms: bool = True):
         # Decryption without the right access will fail
         try:
             # will throw
-            cover_crypt.decrypt(confidential_mkg_user_key, topSecret_mkg_ciphertext)
+            cover_crypt.decrypt(confidential_mkg_user_key, top_secret_mkg_ciphertext)
         except Exception as e:
             # ==> the user is not be able to decrypt
             print("Expected error:", e)
@@ -232,9 +232,9 @@ async def main(use_kms: bool = True):
         assert protected_mkg_plaintext2 == protected_mkg_data
 
         topSecret_mkg_plaintext, _ = cover_crypt.decrypt(
-            topSecret_mkg_fin_user_key, topSecret_mkg_ciphertext
+            topSecret_mkg_fin_user_key, top_secret_mkg_ciphertext
         )
-        assert topSecret_mkg_plaintext == topSecret_mkg_data
+        assert topSecret_mkg_plaintext == top_secret_mkg_data
 
         protected_fin_plaintext, _ = cover_crypt.decrypt(
             topSecret_mkg_fin_user_key, protected_fin_ciphertext

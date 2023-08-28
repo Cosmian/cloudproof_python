@@ -94,6 +94,7 @@ This table shows the minimum version correspondence between the various componen
 
 | `cloudproof_py` | CoverCrypt | Findex      | KMS   |
 | --------------- | ---------- | ----------- | ----- |
+| >=4.1.0         | 11.0.0     | 4.0.0,4.0.1 | 4.5.0 |
 | >=4.0.2         | 11.0.0     | 4.0.0,4.0.1 | 4.4.3 |
 | >=4.0.1         | 11.0.0     | 4.0.0,4.0.1 | 4.4.2 |
 | >=4.0.0         | 11.0.0     | 4.0.0,4.0.1 | 4.3.3 |

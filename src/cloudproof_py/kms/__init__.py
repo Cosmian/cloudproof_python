@@ -29,32 +29,38 @@ class KmsClient(InternalKmsClient):
         return await super().create_cover_crypt_master_key_pair(policy)
 
     async def rotate_cover_crypt_attributes(
-        self, master_secret_key_identifier: str, attributes: List[Union[Attribute, str]]
+        self,
+        attributes: List[Union[Attribute, str]],
+        master_secret_key_identifier: Optional[str],
+        tags: Optional[List[str]] = None,
     ) -> Tuple[str, str]:
         """Rotate the given policy attributes. This will rekey in the KMS:
             - the Master Keys
             - all User Decryption Keys that contain one of these attributes in their policy.
 
         Args:
-            master_secret_key_identifier (str): master secret key UID
             attributes (List[Union[Attribute, str]]): attributes to rotate e.g. ["Department::HR"]
+            master_secret_key_identifier (str): master secret key UID
+            tags: (Optional[List[str][]) tags to retrieve the master secret key if it the id is not satisfied
 
         Returns:
             Tuple[str, str]: (Public key UID, Master secret key UID)
         """
         return await super().rotate_cover_crypt_attributes(
-            master_secret_key_identifier,
             [
                 attr.to_string() if isinstance(attr, Attribute) else attr
                 for attr in attributes
             ],
+            master_secret_key_identifier,
+            tags,
         )
 
     async def cover_crypt_encryption(
         self,
-        public_key_identifier: str,
-        access_policy_str: str,
+        encryption_policy_str: str,
         data: bytes,
+        public_key_identifier: Optional[str],
+        tags: Optional[List[str]] = None,
         header_metadata: Optional[bytes] = None,
         authentication_data: Optional[bytes] = None,
     ) -> bytes:
@@ -62,9 +68,10 @@ class KmsClient(InternalKmsClient):
         ciphertext.
 
         Args:
-            public_key_identifier (str): identifier of the public key
-            access_policy_str (str): the access policy to use for encryption
+            encryption_policy_str (str): the access policy to use for encryption
             data (bytes): data to encrypt
+            public_key_identifier (str): identifier of the public key
+            tags: (Optional[List[str]]): tags to use to find the public key
             header_metadata (Optional[bytes]): additional data to encrypt in the header
             authentication_data (Optional[bytes]): authentication data to use in the encryption
 
@@ -73,9 +80,10 @@ class KmsClient(InternalKmsClient):
         """
         return bytes(
             await super().cover_crypt_encryption(
-                public_key_identifier,
-                access_policy_str,
+                encryption_policy_str,
                 data,
+                public_key_identifier,
+                tags,
                 header_metadata,
                 authentication_data,
             )
@@ -83,22 +91,24 @@ class KmsClient(InternalKmsClient):
 
     async def cover_crypt_decryption(
         self,
-        user_key_identifier: str,
         encrypted_data: bytes,
+        user_key_identifier: Optional[str],
+        tags: Optional[List[str]] = None,
         authentication_data: Optional[bytes] = None,
     ) -> Tuple[bytes, bytes]:
         """Hybrid decryption.
 
         Args:
-            user_key_identifier (str): user secret key identifier
             encrypted_data (bytes): encrypted header || symmetric ciphertext
+            user_key_identifier (str): user secret key identifier
+            tags: (Optional[List[str]]): tags to use to find the user key
             authentication_data (Optional[bytes]): authentication data to use in the decryption
 
         Returns:
             Future[Tuple[bytes, bytes]]: (plaintext bytes, header metadata bytes)
         """
         plaintext, header = await super().cover_crypt_decryption(
-            user_key_identifier, encrypted_data, authentication_data
+            encrypted_data, user_key_identifier, tags, authentication_data
         )
         return bytes(plaintext), bytes(header)
 
