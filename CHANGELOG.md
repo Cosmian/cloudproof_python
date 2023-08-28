@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.1.0] - 2023-08-28
+
+### Features
+
+- Support KMS v4.5.0 with tagging support
+
 ## [4.0.2] - 2023-07-17
 
 ### Miscellaneous Tasks
