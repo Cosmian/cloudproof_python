@@ -2,10 +2,10 @@
 from cloudproof_cover_crypt import (
     Attribute,
     CoverCrypt,
+    MasterPublicKey,
     MasterSecretKey,
     Policy,
     PolicyAxis,
-    PublicKey,
     SymmetricKey,
     UserSecretKey,
 )
@@ -17,6 +17,6 @@ __all__ = [
     "CoverCrypt",
     "SymmetricKey",
     "MasterSecretKey",
-    "PublicKey",
+    "MasterPublicKey",
     "UserSecretKey",
 ]
