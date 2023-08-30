@@ -4,10 +4,10 @@ import unittest
 from cloudproof_py.cover_crypt import (
     Attribute,
     CoverCrypt,
+    MasterPublicKey,
     MasterSecretKey,
     Policy,
     PolicyAxis,
-    PublicKey,
     UserSecretKey,
 )
 from cloudproof_py.kms import KmsClient
@@ -314,7 +314,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         pubkey = await self.client.retrieve_cover_crypt_public_master_key(
             self.pubkey_uid
         )
-        self.assertIsInstance(pubkey, PublicKey)
+        self.assertIsInstance(pubkey, MasterPublicKey)
 
         # Retrieve private key
         privkey = await self.client.retrieve_cover_crypt_private_master_key(

@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Features
 
 - Update to findex 5.0.0
+- Update to covercrypt 12.0.0
 - Support KMS v4.5.0 with tagging support
 
 ## [4.0.2] - 2023-07-17

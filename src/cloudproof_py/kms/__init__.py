@@ -3,9 +3,9 @@ from typing import List, Optional, Tuple, Union
 
 from cloudproof_cover_crypt import (
     Attribute,
+    MasterPublicKey,
     MasterSecretKey,
     Policy,
-    PublicKey,
     UserSecretKey,
 )
 from cosmian_kms import KmsClient as InternalKmsClient
@@ -114,17 +114,17 @@ class KmsClient(InternalKmsClient):
 
     async def retrieve_cover_crypt_public_master_key(
         self, public_key_identifier: str
-    ) -> PublicKey:
+    ) -> MasterPublicKey:
         """Fetch a CoverCrypt Public Master key.
 
         Args:
             public_key_identifier (str): the key unique identifier in the KMS
 
         Returns:
-            PublicKey
+            MasterPublicKey
         """
         object = await super().get_object(public_key_identifier)
-        return PublicKey.from_bytes(object.key_block())
+        return MasterPublicKey.from_bytes(object.key_block())
 
     async def retrieve_cover_crypt_private_master_key(
         self, master_secret_key_identifier: str
