@@ -4,7 +4,7 @@ import os
 import sqlite3
 import unittest
 from base64 import b64decode
-from typing import Dict, List, Optional, Set, Tuple, Sequence
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 from cloudproof_py.findex import Findex, Keyword, Label, Location, MasterKey
 from cloudproof_py.findex.typing import IndexedValuesAndKeywords, ProgressResults
@@ -228,7 +228,10 @@ class TestFindexSQLite(unittest.TestCase):
         indexed_values_and_keywords: IndexedValuesAndKeywords = {
             Location.from_bytes(key): value for key, value in self.users.items()
         }
-        self.interface.upsert(self.mk, self.label, indexed_values_and_keywords, {})
+        inserted_kw = self.interface.upsert(
+            self.mk, self.label, indexed_values_and_keywords, {}
+        )
+        self.assertEqual(len(inserted_kw), 5)
 
         res = self.interface.search(self.mk, self.label, ["Sheperd"])
         self.assertEqual(len(res["Sheperd"]), 2)

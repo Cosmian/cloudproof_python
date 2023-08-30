@@ -4,10 +4,10 @@ import unittest
 from cloudproof_py.cover_crypt import (
     Attribute,
     CoverCrypt,
+    MasterPublicKey,
     MasterSecretKey,
     Policy,
     PolicyAxis,
-    PublicKey,
     UserSecretKey,
 )
 from cloudproof_py.kms import KmsClient
@@ -186,23 +186,23 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
     async def test_doc_example_kms(self) -> None:
         protected_mkg_data = b"protected_mkg_message"
         protected_mkg_ciphertext = await self.client.cover_crypt_encryption(
-            self.pubkey_uid,
             "Department::MKG && Security Level::Protected",
             protected_mkg_data,
+            self.pubkey_uid,
         )
 
-        topSecret_mkg_data = b"top_secret_mkg_message"
-        topSecret_mkg_ciphertext = await self.client.cover_crypt_encryption(
-            self.pubkey_uid,
+        top_secret_mkg_data = b"top_secret_mkg_message"
+        top_secret_mkg_ciphertext = await self.client.cover_crypt_encryption(
             "Department::MKG && Security Level::Top Secret",
-            topSecret_mkg_data,
+            top_secret_mkg_data,
+            self.pubkey_uid,
         )
 
         protected_fin_data = b"protected_fin_message"
         protected_fin_ciphertext = await self.client.cover_crypt_encryption(
-            self.pubkey_uid,
             "Department::FIN && Security Level::Protected",
             protected_fin_data,
+            self.pubkey_uid,
         )
 
         confidential_mkg_user_uid = (
@@ -220,34 +220,34 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         )
 
         protected_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
-            confidential_mkg_user_uid, protected_mkg_ciphertext
+            protected_mkg_ciphertext, confidential_mkg_user_uid
         )
         self.assertEqual(protected_mkg_plaintext, protected_mkg_data)
 
         with self.assertRaises(Exception):
             # will throw
             await self.client.cover_crypt_decryption(
-                confidential_mkg_user_uid, topSecret_mkg_ciphertext
+                top_secret_mkg_ciphertext, confidential_mkg_user_uid
             )
 
         with self.assertRaises(Exception):
             # will throw
             await self.client.cover_crypt_decryption(
-                confidential_mkg_user_uid, protected_fin_ciphertext
+                protected_fin_ciphertext, confidential_mkg_user_uid
             )
 
         protected_mkg_plaintext2, _ = await self.client.cover_crypt_decryption(
-            topSecret_mkg_fin_user_uid, protected_mkg_ciphertext
+            protected_mkg_ciphertext, topSecret_mkg_fin_user_uid
         )
         self.assertEqual(protected_mkg_plaintext2, protected_mkg_data)
 
         topSecret_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
-            topSecret_mkg_fin_user_uid, topSecret_mkg_ciphertext
+            top_secret_mkg_ciphertext, topSecret_mkg_fin_user_uid
         )
-        self.assertEqual(topSecret_mkg_plaintext, topSecret_mkg_data)
+        self.assertEqual(topSecret_mkg_plaintext, top_secret_mkg_data)
 
         protected_fin_plaintext, _ = await self.client.cover_crypt_decryption(
-            topSecret_mkg_fin_user_uid, protected_fin_ciphertext
+            protected_fin_ciphertext, topSecret_mkg_fin_user_uid
         )
         self.assertEqual(protected_fin_plaintext, protected_fin_data)
 
@@ -263,25 +263,25 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
             new_pubkey_uid,
             new_privkey_uid,
         ) = await self.client.rotate_cover_crypt_attributes(
-            self.privkey_uid, ["Department::MKG"]
+            ["Department::MKG"], self.privkey_uid
         )
 
         confidential_mkg_data = b"confidential_secret_mkg_message"
         confidential_mkg_ciphertext = await self.client.cover_crypt_encryption(
-            self.pubkey_uid,
             "Department::MKG && Security Level::Confidential",
             confidential_mkg_data,
+            self.pubkey_uid,
         )
 
         # decrypting the "old" `protected marketing` message
         old_protected_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
-            confidential_mkg_user_uid, protected_mkg_ciphertext
+            protected_mkg_ciphertext, confidential_mkg_user_uid
         )
         self.assertEqual(old_protected_mkg_plaintext, protected_mkg_data)
 
         # decrypting the "new" `confidential marketing` message
         new_confidential_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
-            confidential_mkg_user_uid, confidential_mkg_ciphertext
+            confidential_mkg_ciphertext, confidential_mkg_user_uid
         )
         self.assertEqual(new_confidential_mkg_plaintext, confidential_mkg_data)
 
@@ -292,20 +292,21 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
                 False,
                 self.privkey_uid,
                 "Department::MKG && Security Level::Confidential",
+                None,
                 False,
             )
         )
 
         # decrypting the "old" `protected marketing` message with the old key works
         old_protected_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
-            old_confidential_mkg_user_uid, protected_mkg_ciphertext
+            protected_mkg_ciphertext, old_confidential_mkg_user_uid
         )
         self.assertEqual(old_protected_mkg_plaintext, protected_mkg_data)
 
         # decrypting the "new" `confidential marketing` message with the old key fails
         with self.assertRaises(Exception):
             await self.client.cover_crypt_decryption(
-                old_confidential_mkg_user_uid, confidential_mkg_ciphertext
+                confidential_mkg_ciphertext, old_confidential_mkg_user_uid
             )
 
     async def test_combined_kms_native(self) -> None:
@@ -313,7 +314,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         pubkey = await self.client.retrieve_cover_crypt_public_master_key(
             self.pubkey_uid
         )
-        self.assertIsInstance(pubkey, PublicKey)
+        self.assertIsInstance(pubkey, MasterPublicKey)
 
         # Retrieve private key
         privkey = await self.client.retrieve_cover_crypt_private_master_key(
@@ -338,9 +339,9 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
 
         # Encrypt data using KMS
         kms_ciphertext = await self.client.cover_crypt_encryption(
-            self.pubkey_uid,
             "Department::MKG && Security Level::Protected",
             b"kms_message",
+            self.pubkey_uid,
             header_metadata=b"kms_header",
             authentication_data=b"token1",
         )
@@ -366,7 +367,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
 
         # Decrypt using KMS
         msg, header = await self.client.cover_crypt_decryption(
-            confidential_mkg_user_uid, native_ciphertext, authentication_data=b"token2"
+            native_ciphertext, confidential_mkg_user_uid, authentication_data=b"token2"
         )
         self.assertEqual(msg, b"native_message")
         self.assertEqual(header, b"native_header")

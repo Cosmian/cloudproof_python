@@ -24,9 +24,9 @@ The library is available under a dual licensing scheme Affero GPL/v3 and commerc
 
 The library is based on:
 
-- [CoverCrypt](https://github.com/Cosmian/cover_crypt) algorithm which allows
+- [Covercrypt](https://github.com/Cosmian/cover_crypt) algorithm which allows
   creating ciphertexts for a set of attributes and issuing user keys with access
-  policies over these attributes. `CoverCrypt` offers Post-Quantum resistance.
+  policies over these attributes. `Covercrypt` offers Post-Quantum resistance.
 
 - [Findex](https://github.com/Cosmian/findex) which is a cryptographic protocol designed to securely make search queries on
   an untrusted cloud server. Thanks to its encrypted indexes, large databases can
@@ -48,7 +48,7 @@ Please [check the online documentation](https://docs.cosmian.com/cloudproof_encr
 
 An interactive CLI demo combining policy-based encryption with searchable keywords.
 
-Users data from `./examples/cli_demo/data.json` are encrypted using CoverCrypt and indexed via Findex.
+Users data from `./examples/cli_demo/data.json` are encrypted using Covercrypt and indexed via Findex.
 
 Try the demo:
 
@@ -88,14 +88,15 @@ The generated documentation will be in `./docs/_build/html`.
 
 ## Versions Correspondence
 
-This library depends on [CoverCrypt](https://github.com/Cosmian/cover_crypt) and [Findex](https://github.com/Cosmian/findex).
+This library depends on [Covercrypt](https://github.com/Cosmian/cover_crypt) and [Findex](https://github.com/Cosmian/findex).
 
 This table shows the minimum version correspondence between the various components.
 
-| `cloudproof_py` | CoverCrypt | Findex      | KMS   |
+| `cloudproof_py` | Covercrypt | Findex      | KMS   |
 | --------------- | ---------- | ----------- | ----- |
-| >=4.0.2         | 11.0.0     | 4.0.0,4.0.1 | 4.4.3 |
-| >=4.0.1         | 11.0.0     | 4.0.0,4.0.1 | 4.4.2 |
+| >=4.1.0         | 12.0.0     | 5.0.0       | 4.5.0 |
+| >=4.0.2         | 11.0.0     | 4.0.1       | 4.4.3 |
+| >=4.0.1         | 11.0.0     | 4.0.1       | 4.4.2 |
 | >=4.0.0         | 11.0.0     | 4.0.0,4.0.1 | 4.3.3 |
 | >=3.0.0         | 11.0.0     | 3.0.0       | 4.3.3 |
 | >=2.0.0         | 10.0.0     | 2.0.1,2.1.0 | 4.2.0 |

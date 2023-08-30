@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
-import json
-from base64 import b64encode, b64decode
-from typing import Union
-import os
 import argparse
+import json
+import os
+from base64 import b64decode, b64encode
+from typing import Union
 
 from cloudproof_py.cover_crypt import (
+    CoverCrypt,
+    MasterPublicKey,
+    MasterSecretKey,
     Policy,
     PolicyAxis,
-    CoverCrypt,
-    MasterSecretKey,
-    PublicKey,
     UserSecretKey,
 )
 
@@ -40,7 +40,7 @@ def generate_user(
 
 def generate_ciphertext(
     instance: CoverCrypt,
-    public_key: PublicKey,
+    public_key: MasterPublicKey,
     policy: Policy,
     access_policy: str,
     plaintext: bytes,
@@ -183,7 +183,7 @@ def test_non_regression_vector(vector: dict) -> None:
     #
     Policy.from_bytes(b64decode(vector["policy"]))
     MasterSecretKey.from_bytes(b64decode(vector["master_secret_key"]))
-    PublicKey.from_bytes(b64decode(vector["public_key"]))
+    MasterPublicKey.from_bytes(b64decode(vector["public_key"]))
 
     #
     # Decrypt with top secret fin key
