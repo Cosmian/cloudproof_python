@@ -10,5 +10,5 @@ This example will show you the basics of policy-based encryption:
 
 ```bash
 pip install -r requirements.txt
-python3 main.py
+python3 example.py
 ```
