@@ -337,12 +337,8 @@ async def kms_example(policy: Policy):
     ) = await kms_client.create_cover_crypt_master_key_pair(policy)
 
     # Copy the keys locally for backup
-    public_key = await kms_client.retrieve_cover_crypt_public_master_key(public_key_uid)
-    master_private_key = await kms_client.retrieve_cover_crypt_private_master_key(
-        private_key_uid
-    )
-    print("Downloaded public key", public_key.to_bytes())
-    print("Downloaded private key", master_private_key.to_bytes())
+    _ = await kms_client.retrieve_cover_crypt_public_master_key(public_key_uid)
+    _ = await kms_client.retrieve_cover_crypt_private_master_key(private_key_uid)
 
     # Messages encryption
     protected_mkg_data = b"protected_mkg_message"
