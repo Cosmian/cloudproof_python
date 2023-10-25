@@ -151,7 +151,7 @@ class TestCoverCryptNative(unittest.TestCase):
             )
 
         # Clearing old rotations
-        policy.clear_old_rotations(Attribute("Department", "MKG"))
+        policy.clear_old_attribute_values(Attribute("Department", "MKG"))
         # old rotations for this attribute will be definitely removed from the master keys
         cover_crypt.update_master_keys(policy, master_private_key, public_key)
 
