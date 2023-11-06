@@ -94,7 +94,7 @@ jobs:
       extension: so
       destination: linux-x86-64
       os: ubuntu-20.04
-      kms-version: 4.5.0
+      kms-version: feat-edit_policy
       findex-cloud-version: 0.1.0
       copy_fresh_build: false
       copy_regression_files: |
@@ -107,7 +107,7 @@ jobs:
     with:
       branch: feat/edit_policy
       target: wasm32-unknown-unknown
-      kms-version: 4.5.0
+      kms-version: feat-edit_policy
       findex-cloud-version: 0.1.0
       copy_fresh_build: false
       copy_regression_files: |
