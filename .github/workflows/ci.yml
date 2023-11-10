@@ -32,11 +32,6 @@ jobs:
     services:
       kms:
         image: ghcr.io/cosmian/kms:4.5.0
-        env:
-          COSMIAN_SERVER_URL: http://localhost:9998
-          KMS_PUBLIC_PATH: /tmp
-          KMS_PRIVATE_PATH: /tmp
-          KMS_SHARED_PATH: /tmp
         ports:
           - 9998:9998
       findex_cloud:
@@ -89,12 +84,12 @@ jobs:
     needs: test
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_java_in_docker.yml@develop
     with:
-      branch: v6.0.0
+      branch: develop
       target: x86_64-unknown-linux-gnu
       extension: so
       destination: linux-x86-64
       os: ubuntu-20.04
-      kms-version: 4.5.0
+      kms-version: feat-edit_policy
       findex-cloud-version: 0.1.0
       copy_fresh_build: false
       copy_regression_files: |
@@ -107,7 +102,7 @@ jobs:
     with:
       branch: develop
       target: wasm32-unknown-unknown
-      kms-version: 4.5.0
+      kms-version: feat-edit_policy
       findex-cloud-version: 0.1.0
       copy_fresh_build: false
       copy_regression_files: |
@@ -119,7 +114,7 @@ jobs:
       - test
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_flutter.yml@develop
     with:
-      branch: v7.0.0
+      branch: develop
       target: x86_64-unknown-linux-gnu
       extension: so
       copy_fresh_build: false
