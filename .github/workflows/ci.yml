@@ -84,7 +84,7 @@ jobs:
     needs: test
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_java_in_docker.yml@develop
     with:
-      branch: feat/edit_policy
+      branch: develop
       target: x86_64-unknown-linux-gnu
       extension: so
       destination: linux-x86-64
@@ -100,7 +100,7 @@ jobs:
     needs: test
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_js.yml@develop
     with:
-      branch: feat/edit_policy
+      branch: develop
       target: wasm32-unknown-unknown
       kms-version: feat-edit_policy
       findex-cloud-version: 0.1.0
@@ -114,7 +114,7 @@ jobs:
       - test
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_flutter.yml@develop
     with:
-      branch: feat/edit_policy
+      branch: develop
       target: x86_64-unknown-linux-gnu
       extension: so
       copy_fresh_build: false
