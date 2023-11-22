@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
 import argparse
-from typing import Union
 
+from cloudproof_py.findex import Key
+from cloudproof_py.findex import Keyword
+from cloudproof_py.findex import Label
+from cloudproof_py.findex import Location
+from cloudproof_py.findex import utils
+from cloudproof_py.findex.typing import IndexedValuesAndKeywords
+from cloudproof_py.findex.typing import ProgressResults
+from findex_base import FindexBase
 from findex_dict import FindexDict
 from findex_redis import FindexRedis
 from findex_sqlite import FindexSQLite
-
-from cloudproof_py.findex import Findex, Keyword, Label, Location, MasterKey, utils
-from cloudproof_py.findex.typing import IndexedValuesAndKeywords, ProgressResults
 
 # Simple database containing the firstname and lastname of each user.
 # Each line has a corresponding UID: 1, 2 or 3.
@@ -22,19 +26,19 @@ def main(backend: str = "Dict"):
     print("Database to index:", data)
 
     # Initialize a symmetric key
-    master_key = MasterKey.random()
+    findex_key = Key.random()
 
     # Initialize a random label
     label = Label.random()
 
+    findex_interface: FindexBase
     # Instance the class implementing the required callbacks
-    findex_interface: Union[Findex.FindexUpsert, Findex.FindexSearch]
     if backend == "Redis":
-        findex_interface = FindexRedis()
+        findex_interface = FindexRedis(findex_key, label)
     elif backend == "SQLite":
-        findex_interface = FindexSQLite()
+        findex_interface = FindexSQLite(findex_key, label)
     else:
-        findex_interface = FindexDict()
+        findex_interface = FindexDict(findex_key, label)
 
     # Create the index
     indexed_values_and_keywords: IndexedValuesAndKeywords = {}
@@ -45,11 +49,11 @@ def main(backend: str = "Dict"):
         indexed_values_and_keywords[location] = keywords
 
     # Upsert in Findex
-    findex_interface.upsert(master_key, label, indexed_values_and_keywords, {})
+    findex_interface.findex.add(indexed_values_and_keywords)
 
     # Search
     keywords_to_search = ["Shepherd", "John"]
-    found_locations = findex_interface.search(master_key, label, keywords_to_search)
+    found_locations = findex_interface.findex.search(keywords_to_search)
 
     print("Locations found by keyword:")
     for keyword, locations in found_locations.items():
@@ -65,11 +69,11 @@ def main(backend: str = "Dict"):
     alias_graph: IndexedValuesAndKeywords = {
         Keyword.from_string("John"): ["Joe"],
     }
-    findex_interface.upsert(master_key, label, alias_graph, {})
+    findex_interface.findex.add(alias_graph)
 
     # Now searching `Joe` will return the same location as `John`
     print("Search with aliases:")
-    print("\t", findex_interface.search(master_key, label, ["Joe"]))
+    print("\t", findex_interface.findex.search(["Joe"]))
 
     # Generate an auto-completion graph:
     # For example, with the word `Wilkins`, one could upsert the following aliases:
@@ -80,9 +84,9 @@ def main(backend: str = "Dict"):
     auto_completion_graph = utils.generate_auto_completion(
         ["Martin", "Martial", "Wilkins"]
     )
-    findex_interface.upsert(master_key, label, auto_completion_graph, {})
+    findex_interface.findex.add(auto_completion_graph)
 
-    found_locations = findex_interface.search(master_key, label, ["Mar", "Wil"])
+    found_locations = findex_interface.findex.search(["Mar", "Wil"])
     print("Search with auto-completion:")
     for keyword, locations in found_locations.items():
         print("\t", keyword, ":", locations)
@@ -94,10 +98,10 @@ def main(backend: str = "Dict"):
 
     def echo_progress_callback(res: ProgressResults) -> bool:
         print("\t Partial results:", res)
-        return True
+        return False
 
-    found_locations = findex_interface.search(
-        master_key, label, ["Mar"], progress_callback=echo_progress_callback
+    found_locations = findex_interface.findex.search(
+        ["Mar"], interrupt=echo_progress_callback
     )
     print("\t Final results:", found_locations)
 

@@ -23,7 +23,7 @@ pip install -r requirements.txt
 # Build package
 python3 -m build
 
-while getopts "hitd" opt; do
+while getopts "hitdc" opt; do
   case "$opt" in
   h | \?)
     echo "Args:"
@@ -41,10 +41,32 @@ while getopts "hitd" opt; do
   d)
     doc=1
     ;;
+  c)
+    check=1
+    ;;
   esac
 done
 
 [ $install_pyo3_build -gt 0 ] && scripts/ci_install_pyo3_builds.sh
-[ $test -gt 0 ] && pip install dist/cloudproof_py*.whl && python3 -m unittest tests/test*.py
-[ $doc -gt 0 ] && pip install dist/cloudproof_py*.whl && python3 scripts/extract_lib_types.py &&
-  cd docs && pip install -r requirements.txt && make html
+if [ $test -gt 0 ]; then
+  pip install dist/cloudproof_py*.whl
+  python3 -m unittest tests/test*.py
+fi
+if [ $doc -gt 0 ]; then
+  pip install dist/cloudproof_py*.whl
+  python3 scripts/extract_lib_types.py
+  pushd docs
+  pip install -r requirements.txt
+  make html
+  popd
+fi
+if [ $check -gt 0 ]; then
+  mypy src/cloudproof_py/anonymization/
+  mypy src/cloudproof_py/cover_crypt/
+  mypy src/cloudproof_py/findex/
+  mypy src/cloudproof_py/fpe/
+  mypy tests/
+  mypy examples/cli_demo
+  mypy examples/findex_upsert_search
+  mypy examples/cover_crypt
+fi

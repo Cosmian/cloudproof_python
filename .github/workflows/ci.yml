@@ -31,11 +31,11 @@ jobs:
   test:
     services:
       kms:
-        image: ghcr.io/cosmian/kms:4.5.0
+        image: ghcr.io/cosmian/kms:4.9.1
         ports:
           - 9998:9998
       findex_cloud:
-        image: ghcr.io/cosmian/findex_cloud:0.1.0
+        image: ghcr.io/cosmian/findex_cloud:0.3.1
         ports:
           - 8080:8080
     runs-on: ubuntu-latest
@@ -70,6 +70,7 @@ jobs:
           python tests/non_regression_cover_crypt.py --test --write
           python tests/findex_cloud.py
           python -m unittest tests/test*.py
+          bash ./examples/cli_demo/run_demo.sh
       - name: Upload non-regression test vectors
         uses: actions/upload-artifact@v3
         with:
@@ -89,8 +90,8 @@ jobs:
       extension: so
       destination: linux-x86-64
       os: ubuntu-20.04
-      kms-version: feat-edit_policy
-      findex-cloud-version: 0.1.0
+      kms-version: 4.9.1
+      findex-cloud-version: 0.3.1
       copy_fresh_build: false
       copy_regression_files: |
         cp ./cloudproof_python/non_regression_vector.json src/test/resources/cover_crypt/non_regression/python_non_regression_vector.json
@@ -102,8 +103,8 @@ jobs:
     with:
       branch: develop
       target: wasm32-unknown-unknown
-      kms-version: feat-edit_policy
-      findex-cloud-version: 0.1.0
+      kms-version: 4.9.1
+      findex-cloud-version: 0.3.1
       copy_fresh_build: false
       copy_regression_files: |
         cp ./cloudproof_python/non_regression_vector.json tests/data/cover_crypt/non_regression/python_non_regression_vector.json

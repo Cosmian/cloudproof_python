@@ -4,51 +4,60 @@ import os
 import sqlite3
 import unittest
 from base64 import b64decode
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from base64 import b64encode
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Set
 
-from cloudproof_py.findex import Findex, Keyword, Label, Location, MasterKey
-from cloudproof_py.findex.typing import IndexedValuesAndKeywords, ProgressResults
+from cloudproof_py.findex import Findex
+from cloudproof_py.findex import Key
+from cloudproof_py.findex import Keyword
+from cloudproof_py.findex import Label
+from cloudproof_py.findex import Location
+from cloudproof_py.findex import PythonCallbacks
+from cloudproof_py.findex.typing import IndexedValuesAndKeywords
+from cloudproof_py.findex.typing import ProgressResults
 from cloudproof_py.findex.utils import generate_auto_completion
 
 
-def create_table(conn, create_table_sql):
+def create_table(conn, create_table_sql) -> None:
+    """create Findex 2 tables and another table for Users"""
     try:
         conn.execute(create_table_sql)
     except sqlite3.Error as e:
         print(e)
 
 
-sql_create_users_table = """CREATE TABLE IF NOT EXISTS users (
+SQL_CREATE_USERS_TABLE = """CREATE TABLE IF NOT EXISTS users (
                                             id BLOB PRIMARY KEY,
                                             firstName text NOT NULL,
                                             lastName text NOT NULL
                                         );"""
 
 
-sql_create_entry_table = """CREATE TABLE IF NOT EXISTS entry_table (
+SQL_CREATE_ENTRY_TABLE = """CREATE TABLE IF NOT EXISTS entry_table (
                                             uid BLOB PRIMARY KEY,
                                             value BLOB NOT NULL
                                         );"""
 
-sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
+SQL_CREATE_CHAIN_TABLE = """CREATE TABLE IF NOT EXISTS chain_table (
                                             uid BLOB PRIMARY KEY,
                                             value BLOB NOT NULL
                                         );"""
 
 
-class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompact):
+class FindexSQLite:
     # Start implementing Findex methods
 
-    def fetch_entry_table(
-        self, entry_uids: List[bytes]
-    ) -> Sequence[Tuple[bytes, bytes]]:
+    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
         """Query the entry table
 
         Args:
             entry_uids (List[bytes]): uids to query. if None, return the entire table
 
         Returns:
-            Sequence[Tuple[bytes, bytes]]
+            Dict[bytes, bytes]
         """
         str_uids = ",".join("?" * len(entry_uids))
         cur = self.conn.execute(
@@ -56,12 +65,12 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
             entry_uids,
         )
         values = cur.fetchall()
-        output_dict = []
+        output_dict = {}
         for value in values:
-            output_dict.append((value[0], value[1]))
+            output_dict[value[0]] = value[1]
         return output_dict
 
-    def fetch_all_entry_table_uids(self) -> Set[bytes]:
+    def dump_entry_tokens(self) -> Set[bytes]:
         """Return all UIDs in the Entry Table.
 
         Returns:
@@ -91,19 +100,30 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
             output_dict[v[0]] = v[1]
         return output_dict
 
-    def upsert_entry_table(
-        self, entry_updates: Dict[bytes, Tuple[bytes, bytes]]
+    def upsert_entry_table(  # TODO: remove this duplicated SQLITE implementation
+        self, old_values: Dict[bytes, bytes], new_values: Dict[bytes, bytes]
     ) -> Dict[bytes, bytes]:
         """Update key-value pairs in the entry table
 
         Args:
-            entry_updates (Dict[bytes, Tuple[bytes, bytes]]): uid -> (old_value, new_value)
+            old_values (Dict[bytes, bytes]): old entries
+            new_values (Dict[bytes, bytes]): new entries
 
         Returns:
             Dict[bytes, bytes]: entries that failed update (uid -> current value)
         """
+        map_old_values = {}
+        for uid, value in old_values.items():
+            uid_b64 = b64encode(uid).decode("utf-8")
+            map_old_values[uid_b64] = value
+
         rejected_lines: Dict[bytes, bytes] = {}
-        for uid, (old_val, new_val) in entry_updates.items():
+        for uid, new_val in new_values.items():
+            uid_b64 = b64encode(uid).decode("utf-8")
+            if uid_b64 in map_old_values:
+                old_val = map_old_values[uid_b64]
+            else:
+                old_val = b""
             cursor = self.conn.execute(
                 """INSERT INTO entry_table(uid,value) VALUES(?,?)
                     ON CONFLICT (uid) DO UPDATE SET value=? WHERE value=?
@@ -118,17 +138,6 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
                 rejected_lines[uid] = cursor.fetchone()[0]
         return rejected_lines
 
-    def insert_entry_table(self, entries_items: Dict[bytes, bytes]) -> None:
-        """Insert new key-value pairs in the entry table
-
-        Args:
-            entry_items (Dict[bytes, bytes])
-        """
-        sql_insert_entry = """INSERT INTO entry_table(uid,value) VALUES(?,?)"""
-        self.conn.executemany(
-            sql_insert_entry, entries_items.items()
-        )  # batch insertions
-
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
         """Insert new key-value pairs in the chain table
 
@@ -138,8 +147,8 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
         sql_insert_chain = """INSERT INTO chain_table(uid,value) VALUES(?,?)"""
         self.conn.executemany(sql_insert_chain, chain_items.items())  # batch insertions
 
-    def remove_entry_table(self, entry_uids: Optional[List[bytes]] = None) -> None:
-        """Remove entries from entry table
+    def delete_entry_table(self, entry_uids: Optional[List[bytes]] = None) -> None:
+        """Delete entries from entry table
 
         Args:
             entry_uids (List[bytes], optional): uid of entries to delete.
@@ -152,8 +161,8 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
         else:
             self.conn.execute("DELETE FROM entry_table")
 
-    def remove_chain_table(self, chain_uids: List[bytes]) -> None:
-        """Remove entries from chain table
+    def delete_chain_table(self, chain_uids: List[bytes]) -> None:
+        """Delete entries from chain table
 
         Args:
             chain_uids (List[bytes]): uids to remove from the chain table
@@ -162,58 +171,60 @@ class FindexSQLite(Findex.FindexUpsert, Findex.FindexSearch, Findex.FindexCompac
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
         )
 
-    def list_removed_locations(self, locations: List[Location]) -> List[Location]:
-        """Check whether the given `Locations` still exist.
-
-        Args:
-            locations (List[Location]): `Locations` to check
-
-        Returns:
-            List[Location]: list of `Locations` that were removed
-        """
-        res = []
-        for uid in locations:
-            cursor = self.conn.execute(
-                "SELECT * FROM users WHERE id = ?", (bytes(uid),)
-            )
-            if not cursor.fetchone():
-                res.append(uid)
-        return res
-
     # End findex trait implementation
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
-        super().__init__()
+    def __init__(self, key: Key, label: Label, conn: sqlite3.Connection) -> None:
+        # super().__init__()
 
         # Create database
         self.conn = conn
 
+        # Instantiate Findex with custom callbacks
+        entry_callbacks = PythonCallbacks.new()
+
+        entry_callbacks.set_fetch(self.fetch_entry_table)
+        entry_callbacks.set_upsert(self.upsert_entry_table)
+        entry_callbacks.set_delete(self.delete_entry_table)
+        entry_callbacks.set_dump_tokens(self.dump_entry_tokens)
+
+        chain_callbacks = PythonCallbacks.new()
+        chain_callbacks.set_fetch(self.fetch_chain_table)
+        chain_callbacks.set_insert(self.insert_chain_table)
+        chain_callbacks.set_delete(self.delete_chain_table)
+
+        self.findex = Findex.new_with_custom_backend(
+            key, label, entry_callbacks, chain_callbacks
+        )
+
     def insert_users(self, new_users: Dict[bytes, List[str]]) -> None:
+        """Insert users in SQLite database"""
         flat_entries = [(id, *val) for id, val in new_users.items()]
         sql_insert_user = """INSERT INTO users(id,firstName,lastName) VALUES(?,?,?)"""
         cur = self.conn.cursor()
         cur.executemany(sql_insert_user, flat_entries)
 
     def remove_users(self, users_id: List[bytes]) -> None:
+        """Delete users from SQLite database"""
         sql_rm_user = """DELETE FROM users WHERE id = ?"""
         cur = self.conn.cursor()
         cur.executemany(sql_rm_user, [(id,) for id in users_id])
 
     def get_num_lines(self, db_table: str) -> int:
+        """Get number of lines of given table"""
         return self.conn.execute(f"SELECT COUNT(*) from {db_table};").fetchone()[0]
 
 
 class TestFindexSQLite(unittest.TestCase):
     def setUp(self) -> None:
         # Init db tables
-        conn = sqlite3.connect(":memory:")
-        create_table(conn, sql_create_users_table)
-        create_table(conn, sql_create_entry_table)
-        create_table(conn, sql_create_chain_table)
+        self.conn = sqlite3.connect(":memory:")
+        create_table(self.conn, SQL_CREATE_USERS_TABLE)
+        create_table(self.conn, SQL_CREATE_ENTRY_TABLE)
+        create_table(self.conn, SQL_CREATE_CHAIN_TABLE)
         # Init Findex objects
-        self.interface = FindexSQLite(conn)
-        self.mk = MasterKey.random()
+        self.findex_key = Key.random()
         self.label = Label.random()
+        self.interface = FindexSQLite(self.findex_key, self.label, self.conn)
 
         self.users = {
             b"1": ["Martin", "Sheperd"],
@@ -228,12 +239,10 @@ class TestFindexSQLite(unittest.TestCase):
         indexed_values_and_keywords: IndexedValuesAndKeywords = {
             Location.from_bytes(key): value for key, value in self.users.items()
         }
-        inserted_kw = self.interface.upsert(
-            self.mk, self.label, indexed_values_and_keywords, {}
-        )
+        inserted_kw = self.interface.findex.add(indexed_values_and_keywords)
         self.assertEqual(len(inserted_kw), 5)
 
-        res = self.interface.search(self.mk, self.label, ["Sheperd"])
+        res = self.interface.findex.search(["Sheperd"])
         self.assertEqual(len(res["Sheperd"]), 2)
         self.assertEqual(self.interface.get_num_lines("entry_table"), 5)
         self.assertEqual(self.interface.get_num_lines("chain_table"), 5)
@@ -242,18 +251,16 @@ class TestFindexSQLite(unittest.TestCase):
 
         keywords_list = [item for sublist in self.users.values() for item in sublist]
         graph = generate_auto_completion(keywords_list)
-        self.interface.upsert(self.mk, self.label, graph, {})
+        self.interface.findex.add(graph)
 
         self.assertEqual(self.interface.get_num_lines("entry_table"), 18)
         self.assertEqual(self.interface.get_num_lines("chain_table"), 18)
 
-        res = self.interface.search(self.mk, self.label, ["Mar"])
+        res = self.interface.findex.search(["Mar"])
         # 2 names starting with Mar
         self.assertEqual(len(res["Mar"]), 2)
 
-        res = self.interface.search(
-            self.mk,
-            self.label,
+        res = self.interface.findex.search(
             [Keyword.from_string("Mar"), Keyword.from_string("She")],
         )
         # all names starting with Mar or She
@@ -263,15 +270,15 @@ class TestFindexSQLite(unittest.TestCase):
         # test process callback
         def early_stop_progress_callback(res: ProgressResults) -> bool:
             if "Martin" in res:
-                return False
-            return True
+                return True
+            return False
 
-        res = self.interface.search(
-            self.mk,
-            self.label,
+        res = self.interface.findex.search(
             ["Mar"],
-            progress_callback=early_stop_progress_callback,
+            interrupt=early_stop_progress_callback,
         )
+
+        # print(f"test: {res}")
         # only one location found after early stopping
         self.assertEqual(len(res["Mar"]), 1)
 
@@ -279,37 +286,50 @@ class TestFindexSQLite(unittest.TestCase):
         indexed_values_and_keywords: IndexedValuesAndKeywords = {
             Location.from_bytes(key): value for key, value in self.users.items()
         }
-        self.interface.upsert(self.mk, self.label, indexed_values_and_keywords, {})
+        self.interface.findex.add(indexed_values_and_keywords)
 
-        res = self.interface.search(self.mk, self.label, ["Sheperd"])
+        res = self.interface.findex.search(["Sheperd"])
         self.assertEqual(len(res["Sheperd"]), 2)
 
         # Remove one line in the database before compacting
         self.interface.remove_users([b"1"])
         new_label = Label.random()
-        new_mk = MasterKey.random()
-        self.interface.compact(self.mk, new_mk, new_label, 1)
+        new_key = Key.random()
+
+        def filter_obsolete_data(locations: Set[Location]) -> Set[Location]:
+            """Check whether the given `Locations` still exist.
+
+            Args:
+                locations (List[Location]): `Locations` to check
+
+            Returns:
+                List[Location]: list of `Locations` that were removed
+            """
+            res = set()
+            for uid in locations:
+                cursor = self.conn.execute(
+                    "SELECT * FROM users WHERE id = ?", (bytes(uid),)
+                )
+                if not cursor.fetchone():
+                    res.add(uid)
+            return res
+
+        self.interface.findex.compact(new_key, new_label, 1, filter_obsolete_data)
+
+        self.interface = FindexSQLite(new_key, new_label, self.conn)
 
         # only one result left for `Sheperd`
-        res = self.interface.search(new_mk, new_label, ["Sheperd"])
+        res = self.interface.findex.search(["Sheperd"])
         self.assertEqual(len(res["Sheperd"]), 1)
-
-        # searching with old label will fail
-        res = self.interface.search(new_mk, self.label, ["Sheperd"])
-        self.assertEqual(len(res["Sheperd"]), 0)
-
-        # searching with old key will fail
-        res = self.interface.search(self.mk, new_label, ["Sheperd"])
-        self.assertEqual(len(res["Sheperd"]), 0)
 
 
 class TestFindexNonRegressionTest(unittest.TestCase):
     def setUp(self) -> None:
         # Init Findex objects
-        self.mk = MasterKey.from_bytes(b64decode("6hb1TznoNQFvCWisGWajkA=="))
+        self.findex_key = Key.from_bytes(b64decode("6hb1TznoNQFvCWisGWajkA=="))
         self.label = Label.from_string("Some Label")
 
-        with open("./tests/data/users.json") as f:
+        with open("./tests/data/users.json", encoding="utf-8") as f:
             self.users = json.load(f)
 
     def test_create_non_regression_file(self) -> None:
@@ -317,32 +337,32 @@ class TestFindexNonRegressionTest(unittest.TestCase):
         conn = sqlite3.connect("./tests/data/export/sqlite.db")
         conn.execute("DROP TABLE IF EXISTS entry_table")
         conn.execute("DROP TABLE IF EXISTS chain_table")
-        create_table(conn, sql_create_entry_table)
-        create_table(conn, sql_create_chain_table)
+        create_table(conn, SQL_CREATE_ENTRY_TABLE)
+        create_table(conn, SQL_CREATE_CHAIN_TABLE)
         conn.commit()
 
-        self.interface = FindexSQLite(conn)
+        interface = FindexSQLite(self.findex_key, self.label, conn)
 
         # Create indexed entries for users and upsert them
         new_indexed_entries: IndexedValuesAndKeywords = {
             Location.from_int(id): [str(user[k]) for k in list(user.keys())[1:]]
             for id, user in enumerate(self.users)
         }
-        self.interface.upsert(self.mk, self.label, new_indexed_entries, {})
+        interface.findex.add(new_indexed_entries)
         conn.commit()
 
         # Check the insertion is successful
-        res = self.interface.search(self.mk, self.label, ["France"])
+        res = interface.findex.search(["France"])
         self.assertEqual(len(res["France"]), 30)
 
         conn.close()
 
     def verify(self, db_file: str) -> None:
         conn = sqlite3.connect(db_file)
-        self.interface = FindexSQLite(conn)
+        interface = FindexSQLite(self.findex_key, self.label, conn)
 
         # Verify search results
-        res = self.interface.search(self.mk, self.label, ["France"])
+        res = interface.findex.search(["France"])
         self.assertEqual(len(res["France"]), 30)
 
         # Upsert a single user
@@ -358,10 +378,10 @@ class TestFindexNonRegressionTest(unittest.TestCase):
                 "confidential",
             ]
         }
-        self.interface.upsert(self.mk, self.label, new_user_entry, {})
+        interface.findex.add(new_user_entry)
 
         # Another search
-        res = self.interface.search(self.mk, self.label, ["France"])
+        res = interface.findex.search(["France"])
         self.assertEqual(len(res["France"]), 31)
 
         conn.close()

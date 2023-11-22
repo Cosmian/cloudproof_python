@@ -1,7 +1,7 @@
 # Cloudproof Python Library
 
 [![PyPI version](https://badge.fury.io/py/cloudproof_py.svg)](https://badge.fury.io/py/cloudproof_py)
-![Build status](https://github.com/Cosmian/cloudproof_python/actions/workflows/ci.yml/badge.svg)
+![Build status](https://github.com/Cosmian/cloudproof_python/actions/workflows/ci.yml/badge.svg?branch=main)
 
 The library provides a Python API to the **Cloudproof Encryption** product of the [Cosmian Ubiquitous Encryption platform](https://cosmian.com).
 
@@ -94,7 +94,7 @@ This table shows the minimum version correspondence between the various componen
 
 | `cloudproof_py` | Covercrypt | Findex      | KMS   |
 | --------------- | ---------- | ----------- | ----- |
-| >=4.2.0         | 13.0.0     | 5.0.0       | 4.9.0 |
+| >=4.2.0         | 13.0.0     | 6.0.0       | 4.9.1 |
 | >=4.1.0         | 12.0.0     | 5.0.0       | 4.5.0 |
 | >=4.0.2         | 11.0.0     | 4.0.1       | 4.4.3 |
 | >=4.0.1         | 11.0.0     | 4.0.1       | 4.4.2 |
