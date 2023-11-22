@@ -100,7 +100,7 @@ class FindexSQLite:
             output_dict[v[0]] = v[1]
         return output_dict
 
-    def upsert_entry_table(  # TODO: remove this duplicated SQLITE implementation
+    def upsert_entry_table(
         self, old_values: Dict[bytes, bytes], new_values: Dict[bytes, bytes]
     ) -> Dict[bytes, bytes]:
         """Update key-value pairs in the entry table
@@ -278,7 +278,6 @@ class TestFindexSQLite(unittest.TestCase):
             interrupt=early_stop_progress_callback,
         )
 
-        # print(f"test: {res}")
         # only one location found after early stopping
         self.assertEqual(len(res["Mar"]), 1)
 
