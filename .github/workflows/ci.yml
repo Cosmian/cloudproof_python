@@ -79,12 +79,19 @@ jobs:
         run: |
           python tests/non_regression_cover_crypt.py --test --write
           python -m unittest tests/test*.py
+      - name: Run Covercrypt implementations
+        run: |
+          pip install -r examples/cover_crypt/requirements.txt
+          python3 examples/cover_crypt/example.py
       - name: Run Findex implementations
         run: |
           pip install -r examples/findex_upsert_search/requirements.txt
           python3 examples/findex_upsert_search/main.py
           python3 examples/findex_upsert_search/main.py --sqlite
           python3 examples/findex_upsert_search/main.py --redis
+          python3 examples/findex_upsert_search/main.py --managed-redis
+          python3 examples/findex_upsert_search/main.py --managed-sqlite
+          python3 examples/findex_upsert_search/main.py --managed-rest-server
       - name: Upload non-regression test vectors
         uses: actions/upload-artifact@v3
         with:

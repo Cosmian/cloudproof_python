@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime
+from datetime import timezone
 
-from cloudproof_py.anonymization import (
-    DateAggregator,
-    Hasher,
-    NoiseGenerator,
-    NumberAggregator,
-    NumberScaler,
-    WordMasker,
-    WordPatternMasker,
-    WordTokenizer,
-)
+from cloudproof_py.anonymization import DateAggregator
+from cloudproof_py.anonymization import Hasher
+from cloudproof_py.anonymization import NoiseGenerator
+from cloudproof_py.anonymization import NumberAggregator
+from cloudproof_py.anonymization import NumberScaler
+from cloudproof_py.anonymization import WordMasker
+from cloudproof_py.anonymization import WordPatternMasker
+from cloudproof_py.anonymization import WordTokenizer
 
 
 class TestHasher(unittest.TestCase):
@@ -260,7 +259,6 @@ class TestAggregator(unittest.TestCase):
         input_date_str = "2023-04-27T16:23:45+01:00"
         input_tz = datetime.fromisoformat(input_date_str).tzinfo
         rounded_date_str = aggregator.apply_on_date(input_date_str)
-        print(rounded_date_str)
         rounded_date = datetime.fromisoformat(rounded_date_str)
         expected_date = datetime(2023, 4, 27, 0, 0, 0, tzinfo=input_tz)
         self.assertEqual(rounded_date, expected_date)

@@ -1,3 +1,4 @@
 cloudproof-py==4.2
 redis>=4.3
+requests>=2.31.0
 types_redis>=4.3

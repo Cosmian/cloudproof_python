@@ -2,7 +2,6 @@
 import sqlite3
 from base64 import b64encode
 from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Set
 
@@ -15,11 +14,11 @@ from cloudproof_py.findex import PythonCallbacks
 class FindexSQLite:
     # Start implementing Findex methods
 
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the entry table
 
         Args:
-            entry_uids (List[bytes]): uids to query. if None, return the entire table
+            entry_uids (Set[bytes]): uids to query. if None, return the entire table
 
         Returns:
             Dict[bytes, bytes]
@@ -27,7 +26,7 @@ class FindexSQLite:
         str_uids = ",".join("?" * len(entry_uids))
         cur = self.conn.execute(
             f"SELECT uid, value FROM entry_table WHERE uid IN ({str_uids})",
-            entry_uids,
+            list(entry_uids),
         )
         values = cur.fetchall()
         output_dict = {}
@@ -46,18 +45,19 @@ class FindexSQLite:
 
         return {value[0] for value in values}
 
-    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_chain_table(self, chain_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the chain table
 
         Args:
-            chain_uids (List[bytes]): uids to query
+            chain_uids (Set[bytes]): uids to query
 
         Returns:
             Dict[bytes, bytes]
         """
         str_uids = ",".join("?" * len(chain_uids))
         cur = self.conn.execute(
-            f"SELECT uid, value FROM chain_table WHERE uid IN ({str_uids})", chain_uids
+            f"SELECT uid, value FROM chain_table WHERE uid IN ({str_uids})",
+            list(chain_uids),
         )
         values = cur.fetchall()
         output_dict = {}
@@ -113,11 +113,11 @@ class FindexSQLite:
         sql_insert_chain = """INSERT INTO chain_table(uid,value) VALUES(?,?)"""
         self.conn.executemany(sql_insert_chain, chain_items.items())  # batch insertions
 
-    def delete_entry_table(self, entry_uids: Optional[List[bytes]] = None) -> None:
+    def delete_entry_table(self, entry_uids: Optional[Set[bytes]] = None) -> None:
         """Delete entries from entry table
 
         Args:
-            entry_uids (List[bytes], optional): uid of entries to delete.
+            entry_uids (Set[bytes], optional): uid of entries to delete.
             if None, delete all entries
         """
         if entry_uids:
@@ -127,11 +127,11 @@ class FindexSQLite:
         else:
             self.conn.execute("DELETE FROM entry_table")
 
-    def delete_chain_table(self, chain_uids: List[bytes]) -> None:
+    def delete_chain_table(self, chain_uids: Set[bytes]) -> None:
         """Delete entries from chain table
 
         Args:
-            chain_uids (List[bytes]): uids to remove from the chain table
+            chain_uids (Set[bytes]): uids to remove from the chain table
         """
         self.conn.executemany(
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]

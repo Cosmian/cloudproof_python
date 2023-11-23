@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from base64 import b64encode
 from typing import Dict
-from typing import List
+from typing import Set
 
 import redis
 from cloudproof_py.findex import Findex
@@ -15,11 +15,11 @@ class FindexRedis(FindexBase):
     """Implement Findex callbacks using Redis."""
 
     # Implement callback functions
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
-            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+            entry_uids (Set[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
             Dict[bytes, bytes]: uid -> value mapping
@@ -31,11 +31,11 @@ class FindexRedis(FindexBase):
                 res[uid] = existing_value
         return res
 
-    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_chain_table(self, chain_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the Chain Table.
 
         Args:
-            chain_uids (List[bytes]): uids to query
+            chain_uids (Set[bytes]): uids to query
 
         Returns:
             Dict[bytes, bytes]: uid -> value mapping
@@ -48,7 +48,7 @@ class FindexRedis(FindexBase):
         return res
 
     def upsert_entry_table(
-        self, old_values: dict, new_values: dict
+        self, old_values: Dict[bytes, bytes], new_values: Dict[bytes, bytes]
     ) -> Dict[bytes, bytes]:
         """Update key-value pairs in the Entry Table.
         WARNING: This implementation will not work for concurrency insertions.
@@ -71,8 +71,6 @@ class FindexRedis(FindexBase):
                 old_val = map_old_values[uid_b64]
             else:
                 old_val = b""
-            # rejected_lines = {}
-            # for uid, (old_val, new_val) in entry_updates.items():
             existing_value = self.redis.get(self.prefix_entry + uid)
             if existing_value:
                 if existing_value == old_val:
@@ -98,6 +96,7 @@ class FindexRedis(FindexBase):
             self.redis.set(self.prefix_chain + uid, value)
 
     def __init__(self, key: Key, label: Label) -> None:
+        super().__init__()
         self.redis = redis.Redis()
 
         # The encrypted tables

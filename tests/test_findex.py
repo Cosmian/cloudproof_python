@@ -21,7 +21,7 @@ from cloudproof_py.findex.typing import ProgressResults
 from cloudproof_py.findex.utils import generate_auto_completion
 
 
-def create_table(conn, create_table_sql) -> None:
+def create_table(conn: sqlite3.Connection, create_table_sql: str) -> None:
     """create Findex 2 tables and another table for Users"""
     try:
         conn.execute(create_table_sql)
@@ -50,11 +50,11 @@ SQL_CREATE_CHAIN_TABLE = """CREATE TABLE IF NOT EXISTS chain_table (
 class FindexSQLite:
     # Start implementing Findex methods
 
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the entry table
 
         Args:
-            entry_uids (List[bytes]): uids to query. if None, return the entire table
+            entry_uids (Set[bytes]): uids to query. if None, return the entire table
 
         Returns:
             Dict[bytes, bytes]
@@ -62,7 +62,7 @@ class FindexSQLite:
         str_uids = ",".join("?" * len(entry_uids))
         cur = self.conn.execute(
             f"SELECT uid, value FROM entry_table WHERE uid IN ({str_uids})",
-            entry_uids,
+            list(entry_uids),
         )
         values = cur.fetchall()
         output_dict = {}
@@ -81,18 +81,19 @@ class FindexSQLite:
 
         return {value[0] for value in values}
 
-    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_chain_table(self, chain_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the chain table
 
         Args:
-            chain_uids (List[bytes]): uids to query
+            chain_uids (Set[bytes]): uids to query
 
         Returns:
             Dict[bytes, bytes]
         """
         str_uids = ",".join("?" * len(chain_uids))
         cur = self.conn.execute(
-            f"SELECT uid, value FROM chain_table WHERE uid IN ({str_uids})", chain_uids
+            f"SELECT uid, value FROM chain_table WHERE uid IN ({str_uids})",
+            list(chain_uids),
         )
         values = cur.fetchall()
         output_dict = {}
@@ -147,11 +148,11 @@ class FindexSQLite:
         sql_insert_chain = """INSERT INTO chain_table(uid,value) VALUES(?,?)"""
         self.conn.executemany(sql_insert_chain, chain_items.items())  # batch insertions
 
-    def delete_entry_table(self, entry_uids: Optional[List[bytes]] = None) -> None:
+    def delete_entry_table(self, entry_uids: Optional[Set[bytes]] = None) -> None:
         """Delete entries from entry table
 
         Args:
-            entry_uids (List[bytes], optional): uid of entries to delete.
+            entry_uids (Set[bytes], optional): uid of entries to delete.
             if None, delete all entries
         """
         if entry_uids:
@@ -161,11 +162,11 @@ class FindexSQLite:
         else:
             self.conn.execute("DELETE FROM entry_table")
 
-    def delete_chain_table(self, chain_uids: List[bytes]) -> None:
+    def delete_chain_table(self, chain_uids: Set[bytes]) -> None:
         """Delete entries from chain table
 
         Args:
-            chain_uids (List[bytes]): uids to remove from the chain table
+            chain_uids (Set[bytes]): uids to remove from the chain table
         """
         self.conn.executemany(
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
@@ -203,7 +204,7 @@ class FindexSQLite:
         cur = self.conn.cursor()
         cur.executemany(sql_insert_user, flat_entries)
 
-    def remove_users(self, users_id: List[bytes]) -> None:
+    def remove_users(self, users_id: Set[bytes]) -> None:
         """Delete users from SQLite database"""
         sql_rm_user = """DELETE FROM users WHERE id = ?"""
         cur = self.conn.cursor()
@@ -211,7 +212,7 @@ class FindexSQLite:
 
     def get_num_lines(self, db_table: str) -> int:
         """Get number of lines of given table"""
-        return self.conn.execute(f"SELECT COUNT(*) from {db_table};").fetchone()[0]
+        return int(self.conn.execute(f"SELECT COUNT(*) from {db_table};").fetchone()[0])
 
 
 class TestFindexSQLite(unittest.TestCase):
@@ -235,7 +236,6 @@ class TestFindexSQLite(unittest.TestCase):
 
     def test_sqlite_upsert_graph(self) -> None:
         # Simple insertion
-
         indexed_values_and_keywords: IndexedValuesAndKeywords = {
             Location.from_bytes(key): value for key, value in self.users.items()
         }
@@ -291,7 +291,7 @@ class TestFindexSQLite(unittest.TestCase):
         self.assertEqual(len(res["Sheperd"]), 2)
 
         # Remove one line in the database before compacting
-        self.interface.remove_users([b"1"])
+        self.interface.remove_users(set([b"1"]))
         new_label = Label.random()
         new_key = Key.random()
 
@@ -357,6 +357,7 @@ class TestFindexNonRegressionTest(unittest.TestCase):
         conn.close()
 
     def verify(self, db_file: str) -> None:
+        """internal function to verify test vectors"""
         conn = sqlite3.connect(db_file)
         interface = FindexSQLite(self.findex_key, self.label, conn)
 
@@ -386,6 +387,7 @@ class TestFindexNonRegressionTest(unittest.TestCase):
         conn.close()
 
     def test_check_non_regression_files(self) -> None:
+        """Check non regression test vectors"""
         test_folder = "./tests/data/findex/non_regression/"
         for filename in os.listdir(test_folder):
             if filename[-2:] == "db":

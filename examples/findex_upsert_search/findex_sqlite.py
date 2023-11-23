@@ -2,7 +2,6 @@
 import sqlite3
 from base64 import b64encode
 from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Set
 
@@ -16,11 +15,11 @@ from findex_base import FindexBase
 class FindexSQLite(FindexBase):
     """Implement Findex callbacks using SQLite."""
 
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
-            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+            entry_uids (Set[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
             Dict[bytes, bytes]: uid -> value mapping
@@ -28,7 +27,7 @@ class FindexSQLite(FindexBase):
         str_uids = ",".join("?" * len(entry_uids))
         cur = self.conn.execute(
             f"SELECT uid, value FROM entry_table WHERE uid IN ({str_uids})",
-            entry_uids,
+            list(entry_uids),
         )
         values = cur.fetchall()
         output_dict = {}
@@ -47,18 +46,19 @@ class FindexSQLite(FindexBase):
 
         return {value[0] for value in values}
 
-    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_chain_table(self, chain_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the chain table
 
         Args:
-            chain_uids (List[bytes]): uids to query
+            chain_uids (Set[bytes]): uids to query
 
         Returns:
             Dict[bytes, bytes]
         """
         str_uids = ",".join("?" * len(chain_uids))
         cur = self.conn.execute(
-            f"SELECT uid, value FROM chain_table WHERE uid IN ({str_uids})", chain_uids
+            f"SELECT uid, value FROM chain_table WHERE uid IN ({str_uids})",
+            list(chain_uids),
         )
         values = cur.fetchall()
         output_dict = {}
@@ -84,7 +84,6 @@ class FindexSQLite(FindexBase):
             map_old_values[uid_b64] = value
 
         rejected_lines: Dict[bytes, bytes] = {}
-        # for uid, (old_val, new_val) in entry_updates.items():
         for uid, new_val in new_values.items():
             uid_b64 = b64encode(uid).decode("utf-8")
             if uid_b64 in map_old_values:
@@ -116,11 +115,11 @@ class FindexSQLite(FindexBase):
         sql_insert_chain = """INSERT INTO chain_table(uid,value) VALUES(?,?)"""
         self.conn.executemany(sql_insert_chain, chain_items.items())
 
-    def delete_entry_table(self, entry_uids: Optional[List[bytes]] = None) -> None:
+    def delete_entry_table(self, entry_uids: Optional[Set[bytes]] = None) -> None:
         """Delete entries from entry table
 
         Args:
-            entry_uids (List[bytes], optional): uid of entries to delete.
+            entry_uids (Set[bytes], optional): uid of entries to delete.
             if None, delete all entries
         """
         if entry_uids:
@@ -130,17 +129,18 @@ class FindexSQLite(FindexBase):
         else:
             self.conn.execute("DELETE FROM entry_table")
 
-    def delete_chain_table(self, chain_uids: List[bytes]) -> None:
+    def delete_chain_table(self, chain_uids: Set[bytes]) -> None:
         """Delete entries from chain table
 
         Args:
-            chain_uids (List[bytes]): uids to remove from the chain table
+            chain_uids (Set[bytes]): uids to remove from the chain table
         """
         self.conn.executemany(
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
         )
 
     def __init__(self, key: Key, label: Label) -> None:
+        super().__init__()
         # Create database
         self.conn = sqlite3.connect(":memory:")
         # Creating index tables required by Findex

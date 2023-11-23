@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from base64 import b64encode
 from typing import Dict
-from typing import List
+from typing import Set
 
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
@@ -14,11 +14,11 @@ class FindexDict(FindexBase):
     """Implement Findex callbacks using dictionaries."""
 
     # Implement callback functions
-    def fetch_entry_table(self, entry_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_entry_table(self, entry_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the Entry Table.
 
         Args:
-            entry_uids (List[bytes], optional): uids to query. if None, return the entire table
+            entry_uids (Set[bytes], optional): uids to query. if None, return the entire table
 
         Returns:
             Dict[bytes, bytes]: uid -> value mapping
@@ -29,11 +29,11 @@ class FindexDict(FindexBase):
                 res[uid] = self.entry_table[uid]
         return res
 
-    def fetch_chain_table(self, chain_uids: List[bytes]) -> Dict[bytes, bytes]:
+    def fetch_chain_table(self, chain_uids: Set[bytes]) -> Dict[bytes, bytes]:
         """Query the Chain Table.
 
         Args:
-            chain_uids (List[bytes]): uids to query
+            chain_uids (Set[bytes]): uids to query
 
         Returns:
             Dict[bytes, bytes]: uid -> value mapping
@@ -45,7 +45,7 @@ class FindexDict(FindexBase):
         return res
 
     def upsert_entry_table(
-        self, old_values: dict, new_values: dict
+        self, old_values: Dict[bytes, bytes], new_values: Dict[bytes, bytes]
     ) -> Dict[bytes, bytes]:
         """Update key-value pairs in the entry table
         WARNING: This implementation will not work for concurrency insertions.
@@ -92,18 +92,22 @@ class FindexDict(FindexBase):
                 raise KeyError("Conflict in Chain Table for UID: {uid}")
             self.chain_table[uid] = value
 
-    def delete_entry_table(self, uids: List[bytes]):
+    def delete_entry_table(self, uids: Set[bytes]) -> None:
+        """Delete entries according to given uids"""
         for uid in uids:
             self.entry_table.pop(uid)
 
-    def delete_chain_table(self, uids: List[bytes]):
+    def delete_chain_table(self, uids: Set[bytes]) -> None:
+        """Delete chains according to given uids"""
         for uid in uids:
             self.chain_table.pop(uid)
 
-    def dump_entry_tokens(self):
-        return self.entry_table.keys()
+    def dump_entry_tokens(self) -> Set[bytes]:
+        """Fetch all entries"""
+        return Set(self.entry_table.keys())
 
     def __init__(self, key: Key, label: Label) -> None:
+        super().__init__()
         # These tables are encrypted and can be stored on a remote server like Redis
         self.entry_table: Dict[bytes, bytes] = {}
         self.chain_table: Dict[bytes, bytes] = {}

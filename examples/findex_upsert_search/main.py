@@ -10,6 +10,9 @@ from cloudproof_py.findex.typing import IndexedValuesAndKeywords
 from cloudproof_py.findex.typing import ProgressResults
 from findex_base import FindexBase
 from findex_dict import FindexDict
+from findex_managed_redis import FindexManagedRedis
+from findex_managed_rest_server import FindexManagedRestServer
+from findex_managed_sqlite import FindexManagedSQLite
 from findex_redis import FindexRedis
 from findex_sqlite import FindexSQLite
 
@@ -22,12 +25,12 @@ data = {
 }
 
 
-def main(backend: str = "Dict"):
+def main(backend: str = "Dict") -> None:
+    """main function playing with Findex implementations"""
     print("Database to index:", data)
 
     # Initialize a symmetric key
     findex_key = Key.random()
-
     # Initialize a random label
     label = Label.random()
 
@@ -35,8 +38,14 @@ def main(backend: str = "Dict"):
     # Instance the class implementing the required callbacks
     if backend == "Redis":
         findex_interface = FindexRedis(findex_key, label)
+    elif backend == "ManagedRedis":
+        findex_interface = FindexManagedRedis(findex_key, label)
     elif backend == "SQLite":
         findex_interface = FindexSQLite(findex_key, label)
+    elif backend == "ManagedSQLite":
+        findex_interface = FindexManagedSQLite(findex_key, label)
+    elif backend == "ManagedRestServer":
+        findex_interface = FindexManagedRestServer(findex_key, label)
     else:
         findex_interface = FindexDict(findex_key, label)
 
@@ -112,9 +121,24 @@ if __name__ == "__main__":
         "--redis", action="store_true", help="Use Redis to store Findex indexing tables"
     )
     parser.add_argument(
+        "--managed-redis",
+        action="store_true",
+        help="Use Redis to store Findex indexing tables without custom DB callbacks implementations",
+    )
+    parser.add_argument(
         "--sqlite",
         action="store_true",
         help="Use SQLite to store Findex indexing tables",
+    )
+    parser.add_argument(
+        "--managed-sqlite",
+        action="store_true",
+        help="Use SQLite to store Findex indexing tables without custom DB callbacks implementations",
+    )
+    parser.add_argument(
+        "--managed-rest-server",
+        action="store_true",
+        help="Use managed Rest server",
     )
 
     args = parser.parse_args()
@@ -124,9 +148,20 @@ if __name__ == "__main__":
             "Using Redis backend (be sure to have a running Redis instance on your computer)"
         )
         main("Redis")
+    elif args.managed_redis:
+        print(
+            "Using Redis backend with managed callbacks (be sure to have a running Redis instance on your computer)"
+        )
+        main("ManagedRedis")
     elif args.sqlite:
         print("Using in-memory SQLite")
         main("SQLite")
+    elif args.managed_sqlite:
+        print("Using in-memory SQLite with Managed callbacks")
+        main("ManagedSQLite")
+    elif args.managed_rest_server:
+        print("Using Managed Rest Server")
+        main("ManagedRestServer")
     else:
         print("Using in-memory dictionaries")
         main("Dict")
