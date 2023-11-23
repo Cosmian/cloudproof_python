@@ -3,12 +3,12 @@ import json
 import sqlite3
 from secrets import token_bytes
 
+from cloudproof_py import cover_crypt
+from cloudproof_py import findex
 from findex_db import FindexSQLite
 from termcolor import colored
 
-from cloudproof_py import cover_crypt, findex
-
-sql_create_users_table = """CREATE TABLE IF NOT EXISTS users (
+SQL_CREATE_USERS_TABLE = """CREATE TABLE IF NOT EXISTS users (
                                             id BLOB PRIMARY KEY,
                                             firstName BLOB NOT NULL,
                                             lastName BLOB NOT NULL,
@@ -20,12 +20,12 @@ sql_create_users_table = """CREATE TABLE IF NOT EXISTS users (
                                             security BLOB NOT NULL
                                         );"""
 
-sql_create_entry_table = """CREATE TABLE IF NOT EXISTS entry_table (
+SQL_CREATE_ENTRY_TABLE = """CREATE TABLE IF NOT EXISTS entry_table (
                                             uid BLOB PRIMARY KEY,
                                             value BLOB NOT NULL
                                         );"""
 
-sql_create_chain_table = """CREATE TABLE IF NOT EXISTS chain_table (
+SQL_CREATE_CHAIN_TABLE = """CREATE TABLE IF NOT EXISTS chain_table (
                                             uid BLOB PRIMARY KEY,
                                             value BLOB NOT NULL
                                         );"""
@@ -35,10 +35,10 @@ if __name__ == "__main__":
     # Creating DB tables
     conn = sqlite3.connect(":memory:")
     # Table to store encrypted data
-    conn.execute(sql_create_users_table)
+    conn.execute(SQL_CREATE_USERS_TABLE)
     # Indexing tables required by Findex
-    conn.execute(sql_create_entry_table)
-    conn.execute(sql_create_chain_table)
+    conn.execute(SQL_CREATE_ENTRY_TABLE)
+    conn.execute(SQL_CREATE_CHAIN_TABLE)
 
     # Initialize CoverCrypt
     policy = cover_crypt.Policy()
@@ -119,9 +119,7 @@ if __name__ == "__main__":
     print("CoverCrypt: encryption and db insertion done!")
 
     # Initialize Findex
-    findex_master_key = findex.MasterKey.random()
-    findex_label = findex.Label.random()
-    findex_interface = FindexSQLite(conn)
+    findex_interface = FindexSQLite(findex.Key.random(), findex.Label.random(), conn)
 
     # Mapping of the users database UID to the corresponding keywords (firstname, lastname, etc)
     mapping_indexed_values_to_keywords: findex.typing.IndexedValuesAndKeywords = {
@@ -131,9 +129,7 @@ if __name__ == "__main__":
         for user_id, user in zip(user_db_uids, users)
     }
     # Upsert keywords
-    findex_interface.upsert(
-        findex_master_key, findex_label, mapping_indexed_values_to_keywords, {}
-    )
+    findex_interface.findex.add(mapping_indexed_values_to_keywords)
     print("Findex: Done indexing", len(users), "users")
     print(
         "Auto completion available: only type the 3 first letters of a word to get results"
@@ -141,12 +137,7 @@ if __name__ == "__main__":
     activate_auto_completion = input("Activate search auto completion? [y/n] ") == "y"
     if activate_auto_completion:
         keywords = [keyword.lower() for user in users for keyword in user.values()]
-        findex_interface.upsert(
-            findex_master_key,
-            findex_label,
-            findex.utils.generate_auto_completion(keywords),
-            {},
-        )
+        findex_interface.findex.add(findex.utils.generate_auto_completion(keywords))
 
     cc_user_keys = {"Alice": key_Alice, "Bob": key_Bob, "Charlie": key_Charlie}
 
@@ -168,9 +159,7 @@ if __name__ == "__main__":
         keyword = input("Enter a keyword: ").lower()
 
         # 1. Findex search
-        found_users = findex_interface.search(
-            findex_master_key, findex_label, [keyword]
-        )
+        found_users = findex_interface.findex.search([keyword])
         if len(found_users) == 0:
             print(colored("No user found!", "red", attrs=["bold"]))
             continue

@@ -8,9 +8,9 @@ install_lib() {
         rm linux.zip && rm -rf x86_64*
 }
 
-install_lib "v2.3.0"
+install_lib "v2.4.0"
 if [ $? -ne 0 ]; then
-    install_lib "last_build/feature/edit_policy"
+    install_lib "last_build/fix/add_python_compact"
 fi
 
 exit 0

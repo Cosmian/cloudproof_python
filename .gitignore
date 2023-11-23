@@ -72,3 +72,6 @@ docs/_build/
 # Pyenv
 .env/
 .python-version
+
+# Findex test base
+./tests/data/export/sqlite.db
