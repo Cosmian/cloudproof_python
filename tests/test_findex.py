@@ -138,6 +138,15 @@ class FindexSQLite:
                 rejected_lines[uid] = cursor.fetchone()[0]
         return rejected_lines
 
+    def insert_entry_table(self, entry_items: Dict[bytes, bytes]) -> None:
+        """Insert new key-value pairs in the entry table
+
+        Args:
+            entry_items (Dict[bytes, bytes])
+        """
+        sql_insert_entry = """INSERT INTO entry_table(uid,value) VALUES(?,?)"""
+        self.conn.executemany(sql_insert_entry, entry_items.items())  # batch insertions
+
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
         """Insert new key-value pairs in the chain table
 
@@ -184,6 +193,7 @@ class FindexSQLite:
 
         entry_callbacks.set_fetch(self.fetch_entry_table)
         entry_callbacks.set_upsert(self.upsert_entry_table)
+        entry_callbacks.set_insert(self.insert_entry_table)
         entry_callbacks.set_delete(self.delete_entry_table)
         entry_callbacks.set_dump_tokens(self.dump_entry_tokens)
 

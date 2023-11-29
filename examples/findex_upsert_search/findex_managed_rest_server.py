@@ -14,7 +14,6 @@ class FindexManagedRestServer(FindexBase):
     def __init__(self, key: Key, label: str) -> None:
         super().__init__()
         base_url = "http://localhost:8080"
-        label = "Hello World!"
 
         # Creating the index on the backend
         try:
@@ -41,4 +40,4 @@ class FindexManagedRestServer(FindexBase):
             Key.from_bytes(bytes(index["upsert_entries_key"])),
             Key.from_bytes(bytes(index["insert_chains_key"])),
         )
-        self.findex = Findex.new_with_rest_backend(key, label, str(token), base_url)
+        self.findex = Findex.new_with_rest_backend(label, str(token), base_url)
