@@ -5,7 +5,6 @@ from typing import Set
 
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import PythonCallbacks
 from findex_base import FindexBase
 
@@ -117,7 +116,7 @@ class FindexDict(FindexBase):
         """Fetch all entries"""
         return Set(self.entry_table.keys())
 
-    def __init__(self, key: Key, label: Label) -> None:
+    def __init__(self, key: Key, label: str) -> None:
         super().__init__()
         # These tables are encrypted and can be stored on a remote server like Redis
         self.entry_table: Dict[bytes, bytes] = {}

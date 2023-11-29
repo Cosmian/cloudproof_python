@@ -7,7 +7,6 @@ from typing import Set
 
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import PythonCallbacks
 from findex_base import FindexBase
 
@@ -148,7 +147,7 @@ class FindexSQLite(FindexBase):
             "DELETE FROM chain_table WHERE uid = ?", [(uid,) for uid in chain_uids]
         )
 
-    def __init__(self, key: Key, label: Label) -> None:
+    def __init__(self, key: Key, label: str) -> None:
         super().__init__()
         # Create database
         self.conn = sqlite3.connect(":memory:")

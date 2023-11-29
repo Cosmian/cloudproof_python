@@ -5,17 +5,16 @@ import requests
 from cloudproof_py.findex import AuthorizationToken
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
-from cloudproof_py.findex import Label
 from findex_base import FindexBase
 
 
 class FindexManagedRestServer(FindexBase):
     """No need to implement Findex callbacks using managed backend Rest server."""
 
-    def __init__(self, key: Key, label: Label) -> None:
+    def __init__(self, key: Key, label: str) -> None:
         super().__init__()
         base_url = "http://localhost:8080"
-        label = Label.from_string("Hello World!")
+        label = "Hello World!"
 
         # Creating the index on the backend
         try:

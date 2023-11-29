@@ -3,7 +3,6 @@ import argparse
 
 from cloudproof_py.findex import Key
 from cloudproof_py.findex import Keyword
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import Location
 from cloudproof_py.findex import utils
 from cloudproof_py.findex.typing import IndexedValuesAndKeywords
@@ -32,7 +31,7 @@ def main(backend: str = "Dict") -> None:
     # Initialize a symmetric key
     findex_key = Key.random()
     # Initialize a random label
-    label = Label.random()
+    label = "My random public label"
 
     findex_interface: FindexBase
     # Instance the class implementing the required callbacks

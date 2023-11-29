@@ -13,7 +13,6 @@ from typing import Set
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
 from cloudproof_py.findex import Keyword
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import Location
 from cloudproof_py.findex import PythonCallbacks
 from cloudproof_py.findex.typing import IndexedValuesAndKeywords
@@ -174,7 +173,7 @@ class FindexSQLite:
 
     # End findex trait implementation
 
-    def __init__(self, key: Key, label: Label, conn: sqlite3.Connection) -> None:
+    def __init__(self, key: Key, label: str, conn: sqlite3.Connection) -> None:
         # super().__init__()
 
         # Create database
@@ -224,7 +223,7 @@ class TestFindexSQLite(unittest.TestCase):
         create_table(self.conn, SQL_CREATE_CHAIN_TABLE)
         # Init Findex objects
         self.findex_key = Key.random()
-        self.label = Label.random()
+        self.label = "My public label"
         self.interface = FindexSQLite(self.findex_key, self.label, self.conn)
 
         self.users = {
@@ -292,7 +291,7 @@ class TestFindexSQLite(unittest.TestCase):
 
         # Remove one line in the database before compacting
         self.interface.remove_users(set([b"1"]))
-        new_label = Label.random()
+        new_label = "My new public label"
         new_key = Key.random()
 
         def filter_obsolete_data(locations: Set[Location]) -> Set[Location]:
@@ -326,7 +325,7 @@ class TestFindexNonRegressionTest(unittest.TestCase):
     def setUp(self) -> None:
         # Init Findex objects
         self.findex_key = Key.from_bytes(b64decode("6hb1TznoNQFvCWisGWajkA=="))
-        self.label = Label.from_string("Some Label")
+        self.label = "Some Label"
 
         with open("./tests/data/users.json", encoding="utf-8") as f:
             self.users = json.load(f)

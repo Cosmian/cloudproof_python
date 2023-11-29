@@ -119,7 +119,7 @@ if __name__ == "__main__":
     print("CoverCrypt: encryption and db insertion done!")
 
     # Initialize Findex
-    findex_interface = FindexSQLite(findex.Key.random(), findex.Label.random(), conn)
+    findex_interface = FindexSQLite(findex.Key.random(), "My label", conn)
 
     # Mapping of the users database UID to the corresponding keywords (firstname, lastname, etc)
     mapping_indexed_values_to_keywords: findex.typing.IndexedValuesAndKeywords = {

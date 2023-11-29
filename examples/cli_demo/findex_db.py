@@ -7,7 +7,6 @@ from typing import Set
 
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import PythonCallbacks
 
 
@@ -139,7 +138,7 @@ class FindexSQLite:
 
     # End findex trait implementation
 
-    def __init__(self, key: Key, label: Label, conn: sqlite3.Connection) -> None:
+    def __init__(self, key: Key, label: str, conn: sqlite3.Connection) -> None:
         # super().__init__()
 
         # Create database
