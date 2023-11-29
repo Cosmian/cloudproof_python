@@ -40,7 +40,7 @@ class TestFindexRest(unittest.TestCase):
             Key.from_bytes(bytes(index["upsert_entries_key"])),
             Key.from_bytes(bytes(index["insert_chains_key"])),
         )
-        findex = Findex.new_with_rest_backend(key, label, str(token), base_url)
+        findex = Findex.new_with_rest_backend(label, str(token), base_url)
 
         # Upsert data
         findex.add(
