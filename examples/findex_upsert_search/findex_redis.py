@@ -108,6 +108,7 @@ class FindexRedis(FindexBase):
 
         entry_callbacks.set_fetch(self.fetch_entry_table)
         entry_callbacks.set_upsert(self.upsert_entry_table)
+        # entry_callbacks.set_insert(self.insert_entry_table) # not implemented yet
         # entry_callbacks.set_delete(self.delete_entry_table) # not implemented yet
         # entry_callbacks.set_dump_tokens(self.dump_entry_tokens) # not implemented yet
 
