@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -ex
 
 # Optional flags
 install_pyo3_build=0 # install pyo3 builds from package.cosmian.com
@@ -23,6 +23,7 @@ pip install -r requirements.txt
 # Build package
 python3 -m build
 
+check=0
 while getopts "hitdc" opt; do
   case "$opt" in
   h | \?)
@@ -30,6 +31,7 @@ while getopts "hitdc" opt; do
     echo "-i  install last pyo3 builds"
     echo "-t  run tests"
     echo "-d  make doc"
+    echo "-c  mypy checks"
     exit 0
     ;;
   i)
@@ -47,7 +49,11 @@ while getopts "hitdc" opt; do
   esac
 done
 
-[ $install_pyo3_build -gt 0 ] && scripts/ci_install_pyo3_builds.sh
+if [ $install_pyo3_build -gt 0 ]; then
+  pip install -r requirements.txt
+  bash scripts/ci_install_pyo3_builds.sh
+  pip install mypy types-termcolor>=1.1 types_redis>=4.3 requests>=2.28 types-requests>=2.28
+fi
 if [ $test -gt 0 ]; then
   pip install dist/cloudproof_py*.whl
   python3 -m unittest tests/test*.py
@@ -66,7 +72,7 @@ if [ $check -gt 0 ]; then
   mypy src/cloudproof_py/findex/
   mypy src/cloudproof_py/fpe/
   mypy tests/
-  mypy examples/cli_demo
-  mypy examples/findex_upsert_search
-  mypy examples/cover_crypt
+  mypy examples/cli_demo/
+  mypy examples/findex_upsert_search/
+  mypy examples/cover_crypt/
 fi

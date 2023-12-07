@@ -17,4 +17,4 @@ class FindexManagedSQLite(FindexBase):
         if os.path.exists(sqlite_db):
             os.remove(sqlite_db)
 
-        self.findex = Findex.new_with_sqlite_backend(key, label, sqlite_db, sqlite_db)
+        self.findex = Findex.new_with_sqlite_interface(key, label, sqlite_db, sqlite_db)

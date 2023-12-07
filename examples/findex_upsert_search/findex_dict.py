@@ -136,6 +136,6 @@ class FindexDict(FindexBase):
         chain_callbacks.set_insert(self.insert_chain_table)
         chain_callbacks.set_delete(self.delete_chain_table)
 
-        self.findex = Findex.new_with_custom_backend(
+        self.findex = Findex.new_with_custom_interface(
             key, label, entry_callbacks, chain_callbacks
         )

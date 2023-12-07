@@ -20,4 +20,4 @@ class FindexManagedRedis(FindexBase):
         print(redis_url)
         r.flushdb()
 
-        self.findex = Findex.new_with_redis_backend(key, label, redis_url, redis_url)
+        self.findex = Findex.new_with_redis_interface(key, label, redis_url, redis_url)
