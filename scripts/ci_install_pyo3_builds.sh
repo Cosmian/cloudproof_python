@@ -11,8 +11,8 @@ install_lib() {
 install_lib "v2.4.0"
 if [ $? -ne 0 ]; then
     branch="fix/rename_findex_traits"
-    echo installing python from branch $(branch)
-    install_lib "last_build/$(branch)"
+    echo installing python from branch ${branch}
+    install_lib "last_build/${branch}"
 fi
 
 exit 0
