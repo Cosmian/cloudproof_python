@@ -7,14 +7,13 @@ import requests
 from cloudproof_py.findex import AuthorizationToken
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import Location
 
 
 class TestFindexRest(unittest.TestCase):
     def test_add_and_search(self) -> None:
         base_url = "http://localhost:8080"
-        label = Label.from_string("Hello World!")
+        label = "Hello World!"
 
         # Creating the index on the backend
         try:
@@ -41,7 +40,7 @@ class TestFindexRest(unittest.TestCase):
             Key.from_bytes(bytes(index["upsert_entries_key"])),
             Key.from_bytes(bytes(index["insert_chains_key"])),
         )
-        findex = Findex.new_with_rest_backend(key, label, str(token), base_url)
+        findex = Findex.new_with_rest_interface(label, str(token), base_url)
 
         # Upsert data
         findex.add(

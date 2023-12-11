@@ -6,7 +6,6 @@ from typing import Set
 import redis
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import PythonCallbacks
 from findex_base import FindexBase
 
@@ -95,7 +94,7 @@ class FindexRedis(FindexBase):
                 raise KeyError("Conflict in Chain Table for UID: {uid}")
             self.redis.set(self.prefix_chain + uid, value)
 
-    def __init__(self, key: Key, label: Label) -> None:
+    def __init__(self, key: Key, label: str) -> None:
         super().__init__()
         self.redis = redis.Redis()
 
@@ -108,6 +107,7 @@ class FindexRedis(FindexBase):
 
         entry_callbacks.set_fetch(self.fetch_entry_table)
         entry_callbacks.set_upsert(self.upsert_entry_table)
+        # entry_callbacks.set_insert(self.insert_entry_table) # not implemented yet
         # entry_callbacks.set_delete(self.delete_entry_table) # not implemented yet
         # entry_callbacks.set_dump_tokens(self.dump_entry_tokens) # not implemented yet
 
@@ -116,6 +116,6 @@ class FindexRedis(FindexBase):
         chain_callbacks.set_insert(self.insert_chain_table)
         # chain_callbacks.set_delete(self.delete_chain_table) # not implemented yet
 
-        self.findex = Findex.new_with_custom_backend(
+        self.findex = Findex.new_with_custom_interface(
             key, label, entry_callbacks, chain_callbacks
         )

@@ -10,7 +10,9 @@ install_lib() {
 
 install_lib "v2.4.0"
 if [ $? -ne 0 ]; then
-    install_lib "last_build/fix/add_python_compact"
+    branch="fix/rename_findex_traits"
+    echo installing python from branch ${branch}
+    install_lib "last_build/${branch}"
 fi
 
 exit 0

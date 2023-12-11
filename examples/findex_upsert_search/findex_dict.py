@@ -5,7 +5,6 @@ from typing import Set
 
 from cloudproof_py.findex import Findex
 from cloudproof_py.findex import Key
-from cloudproof_py.findex import Label
 from cloudproof_py.findex import PythonCallbacks
 from findex_base import FindexBase
 
@@ -81,6 +80,17 @@ class FindexDict(FindexBase):
 
         return rejected_lines
 
+    def insert_entry_table(self, entries: Dict[bytes, bytes]) -> None:
+        """Insert new key-value pairs in the Entry Table.
+
+        Args:
+            chain_items (Dict[bytes, bytes]): uid -> value mapping to insert
+        """
+        for uid, value in entries.items():
+            if uid in self.entry_table:
+                raise KeyError("Conflict in Entry Table for UID: {uid}")
+            self.entry_table[uid] = value
+
     def insert_chain_table(self, chain_items: Dict[bytes, bytes]) -> None:
         """Insert new key-value pairs in the Chain Table.
 
@@ -106,7 +116,7 @@ class FindexDict(FindexBase):
         """Fetch all entries"""
         return Set(self.entry_table.keys())
 
-    def __init__(self, key: Key, label: Label) -> None:
+    def __init__(self, key: Key, label: str) -> None:
         super().__init__()
         # These tables are encrypted and can be stored on a remote server like Redis
         self.entry_table: Dict[bytes, bytes] = {}
@@ -117,6 +127,7 @@ class FindexDict(FindexBase):
 
         entry_callbacks.set_fetch(self.fetch_entry_table)
         entry_callbacks.set_upsert(self.upsert_entry_table)
+        entry_callbacks.set_insert(self.insert_entry_table)
         entry_callbacks.set_delete(self.delete_entry_table)
         entry_callbacks.set_dump_tokens(self.dump_entry_tokens)
 
@@ -125,6 +136,6 @@ class FindexDict(FindexBase):
         chain_callbacks.set_insert(self.insert_chain_table)
         chain_callbacks.set_delete(self.delete_chain_table)
 
-        self.findex = Findex.new_with_custom_backend(
+        self.findex = Findex.new_with_custom_interface(
             key, label, entry_callbacks, chain_callbacks
         )
