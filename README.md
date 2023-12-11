@@ -1,7 +1,7 @@
 # Cloudproof Python Library
 
 [![PyPI version](https://badge.fury.io/py/cloudproof_py.svg)](https://badge.fury.io/py/cloudproof_py)
-![Build status](https://github.com/Cosmian/cloudproof_python/actions/workflows/ci.yml/badge.svg)
+![Build status](https://github.com/Cosmian/cloudproof_python/actions/workflows/ci.yml/badge.svg?branch=main)
 
 The library provides a Python API to the **Cloudproof Encryption** product of the [Cosmian Ubiquitous Encryption platform](https://cosmian.com).
 
@@ -42,7 +42,7 @@ pip install cloudproof_py
 ```
 
 Code examples are available in [./examples](./examples) to get you started.
-Please [check the online documentation](https://docs.cosmian.com/cloudproof_encryption/use_cases_benefits/) for more details on using the CloudProof APIs.
+Please [check the online documentation](https://docs.cosmian.com/) for more details on using the CloudProof APIs.
 
 ## Demo
 
@@ -92,12 +92,13 @@ This library depends on [Covercrypt](https://github.com/Cosmian/cover_crypt) and
 
 This table shows the minimum version correspondence between the various components.
 
-| `cloudproof_py` | Covercrypt | Findex      | KMS   |
-| --------------- | ---------- | ----------- | ----- |
-| >=4.1.0         | 12.0.0     | 5.0.0       | 4.5.0 |
-| >=4.0.2         | 11.0.0     | 4.0.1       | 4.4.3 |
-| >=4.0.1         | 11.0.0     | 4.0.1       | 4.4.2 |
-| >=4.0.0         | 11.0.0     | 4.0.0,4.0.1 | 4.3.3 |
-| >=3.0.0         | 11.0.0     | 3.0.0       | 4.3.3 |
-| >=2.0.0         | 10.0.0     | 2.0.1,2.1.0 | 4.2.0 |
-| >=1.0.0         | 8.0.1      | 2.0.0       | -     |
+| `cloudproof_py` | Covercrypt | Findex      | KMS    |
+| --------------- | ---------- | ----------- | ------ |
+| >=4.2.0         | 13.0.0     | 6.0.0       | 4.10.0 |
+| >=4.1.0         | 12.0.0     | 5.0.0       | 4.5.0  |
+| >=4.0.2         | 11.0.0     | 4.0.1       | 4.4.3  |
+| >=4.0.1         | 11.0.0     | 4.0.1       | 4.4.2  |
+| >=4.0.0         | 11.0.0     | 4.0.0,4.0.1 | 4.3.3  |
+| >=3.0.0         | 11.0.0     | 3.0.0       | 4.3.3  |
+| >=2.0.0         | 10.0.0     | 2.0.1,2.1.0 | 4.2.0  |
+| >=1.0.0         | 8.0.1      | 2.0.0       | -      |

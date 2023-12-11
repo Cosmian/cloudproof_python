@@ -1,0 +1,18 @@
+---
+version: "3.4"
+services:
+  kms:
+    container_name: kms
+    image: ghcr.io/cosmian/kms:4.10.0
+    ports:
+      - 9998:9998
+
+  findex_cloud:
+    image: ghcr.io/cosmian/findex_cloud:0.3.1
+    ports:
+      - 8080:8080
+
+  redis:
+    image: redis:latest
+    ports:
+      - 6379:6379

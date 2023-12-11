@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.2.0] - 2023-11-22
+
+### Features
+
+- Add policy edition example and tests ([#36])
+- Support findex v6
+
 ## [4.1.0] - 2023-08-28
 
 ### Features

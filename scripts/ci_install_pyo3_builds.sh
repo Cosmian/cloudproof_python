@@ -8,9 +8,11 @@ install_lib() {
         rm linux.zip && rm -rf x86_64*
 }
 
-install_lib "v2.2.1"
+install_lib "v2.4.0"
 if [ $? -ne 0 ]; then
-    install_lib "last_build/release/v2.2.1"
+    branch="fix/rename_findex_traits"
+    echo installing python from branch ${branch}
+    install_lib "last_build/${branch}"
 fi
 
 exit 0
