@@ -24,7 +24,7 @@ jobs:
     with:
       branch: ${{ github.head_ref }}
       target: x86_64-unknown-linux-gnu
-      kms-version: 4.11.3
+      kms-version: feature-covercrypt_rekey
       findex-cloud-version: 0.3.1
       copy_fresh_build: false
       regression_files: |
@@ -40,7 +40,7 @@ jobs:
       extension: so
       destination: linux-x86-64
       os: ubuntu-20.04
-      kms-version: 4.11.3
+      kms-version: feature-covercrypt_rekey
       findex-cloud-version: 0.3.1
       copy_fresh_build: false
       copy_regression_files: |
@@ -53,7 +53,7 @@ jobs:
     with:
       branch: feature/support_kms_js_3_1
       target: wasm32-unknown-unknown
-      kms-version: 4.11.3
+      kms-version: feature-covercrypt_rekey
       findex-cloud-version: 0.3.1
       copy_fresh_build: false
       copy_regression_files: |
