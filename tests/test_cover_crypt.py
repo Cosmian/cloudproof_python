@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from cloudproof_py.cover_crypt import (
-    Attribute,
-    CoverCrypt,
-    MasterPublicKey,
-    MasterSecretKey,
-    Policy,
-    PolicyAxis,
-    UserSecretKey,
-)
+from cloudproof_py.cover_crypt import Attribute
+from cloudproof_py.cover_crypt import CoverCrypt
+from cloudproof_py.cover_crypt import MasterPublicKey
+from cloudproof_py.cover_crypt import MasterSecretKey
+from cloudproof_py.cover_crypt import Policy
+from cloudproof_py.cover_crypt import PolicyAxis
+from cloudproof_py.cover_crypt import UserSecretKey
 from cloudproof_py.kms import KmsClient
 
 
@@ -396,7 +394,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
 
         # Importing NON rekeyed key
         old_confidential_mkg_user_uid = (
-            await self.client.import_cover_crypt_user_decryption_key_request(
+            await self.client.import_cover_crypt_user_decryption_key(
                 old_confidential_mkg_user_key.to_bytes(),
                 False,
                 self.privkey_uid,
