@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -ex
 
 # Optional flags
@@ -17,7 +17,7 @@ python3 -m venv "$venv_dir"
 export PATH="$venv_dir/bin:$PATH"
 
 # Remove old build
-rm -v dist/*
+rm -v dist/* || true
 # Install requirements
 pip install -r requirements.txt
 # Build package
