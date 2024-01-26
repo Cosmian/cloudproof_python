@@ -2,13 +2,11 @@
 import argparse
 import asyncio
 
-from cloudproof_py.cover_crypt import (
-    Attribute,
-    CoverCrypt,
-    Policy,
-    PolicyAxis,
-    UserSecretKey,
-)
+from cloudproof_py.cover_crypt import Attribute
+from cloudproof_py.cover_crypt import CoverCrypt
+from cloudproof_py.cover_crypt import Policy
+from cloudproof_py.cover_crypt import PolicyAxis
+from cloudproof_py.cover_crypt import UserSecretKey
 from cloudproof_py.kms import KmsClient
 
 
@@ -446,6 +444,67 @@ async def kms_example(policy: Policy):
         confidential_mkg_ciphertext, confidential_mkg_user_uid
     )
     assert new_confidential_mkg_plaintext == confidential_mkg_data
+
+    # Edit Policy
+
+    # Addition
+    await kms_client.add_cover_crypt_attribute(
+        "Department::R&D", False, private_key_uid
+    )
+
+    # hierarchical axis are immutable (no addition nor deletion allowed)
+    try:
+        await kms_client.add_cover_crypt_attribute(
+            "Security Level::Classified", False, private_key_uid
+        )
+    except Exception as e:
+        print("Expected error:", e)
+
+    # master keys are automatically updated with the new attributes
+    protected_rd_data = b"top_secret_mkg_message"
+    protected_rd_ciphertext = await kms_client.cover_crypt_encryption(
+        "Department::R&D && Security Level::Protected",
+        protected_rd_data,
+        public_key_uid,
+    )
+    confidential_rd_fin_user_key_uid = (
+        await kms_client.create_cover_crypt_user_decryption_key(
+            "(Department::R&D || Department::FIN) && Security Level::Confidential",
+            private_key_uid,
+        )
+    )
+
+    protected_rd_plaintext, _ = await kms_client.cover_crypt_decryption(
+        protected_rd_ciphertext, confidential_rd_fin_user_key_uid
+    )
+    assert protected_rd_plaintext == protected_rd_data
+
+    # Removing access to an attribute
+    # 1 - Keep decryption access to ciphertext from old attributes but remove the right to encrypt new data
+
+    await kms_client.disable_cover_crypt_attribute("Department::R&D", private_key_uid)
+    # this method can also be used on hierarchical axis
+    await kms_client.disable_cover_crypt_attribute(
+        "Security Level::Protected", private_key_uid
+    )
+
+    # disabled attributes can no longer be used to encrypt data
+
+    # New data encryption for `Department::R&D` will fail
+    try:
+        await kms_client.cover_crypt_encryption(
+            "Department::R&D && Security Level::Protected",
+            protected_rd_data,
+            public_key_uid,
+        )
+    except Exception as e:
+        print("Expected error:", e)
+
+    # Decryption of old ciphertext is still possible
+    new_protected_rd_plaintext, _ = await kms_client.cover_crypt_decryption(
+        protected_rd_ciphertext, confidential_rd_fin_user_key_uid
+    )
+    assert new_protected_rd_plaintext == protected_rd_data
 
 
 if __name__ == "__main__":

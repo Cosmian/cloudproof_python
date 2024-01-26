@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from cloudproof_py.cover_crypt import (
-    Attribute,
-    CoverCrypt,
-    MasterPublicKey,
-    MasterSecretKey,
-    Policy,
-    PolicyAxis,
-    UserSecretKey,
-)
+from cloudproof_py.cover_crypt import Attribute
+from cloudproof_py.cover_crypt import CoverCrypt
+from cloudproof_py.cover_crypt import MasterPublicKey
+from cloudproof_py.cover_crypt import MasterSecretKey
+from cloudproof_py.cover_crypt import Policy
+from cloudproof_py.cover_crypt import PolicyAxis
+from cloudproof_py.cover_crypt import UserSecretKey
 from cloudproof_py.kms import KmsClient
 
 
@@ -396,7 +394,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
 
         # Importing NON rekeyed key
         old_confidential_mkg_user_uid = (
-            await self.client.import_cover_crypt_user_decryption_key_request(
+            await self.client.import_cover_crypt_user_decryption_key(
                 old_confidential_mkg_user_key.to_bytes(),
                 False,
                 self.privkey_uid,
@@ -417,6 +415,65 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
             await self.client.cover_crypt_decryption(
                 confidential_mkg_ciphertext, old_confidential_mkg_user_uid
             )
+
+        # Edit Policy
+
+        # Addition
+        await self.client.add_cover_crypt_attribute(
+            "Department::R&D", False, self.privkey_uid
+        )
+
+        # hierarchical axis are immutable (no addition nor deletion allowed)
+        with self.assertRaises(Exception):
+            await self.client.add_cover_crypt_attribute(
+                "Security Level::Classified", False, self.privkey_uid
+            )
+
+        # master keys are automatically updated with the new attributes
+        protected_rd_data = b"top_secret_mkg_message"
+        protected_rd_ciphertext = await self.client.cover_crypt_encryption(
+            "Department::R&D && Security Level::Protected",
+            protected_rd_data,
+            self.pubkey_uid,
+        )
+        confidential_rd_fin_user_key_uid = (
+            await self.client.create_cover_crypt_user_decryption_key(
+                "(Department::R&D || Department::FIN) && Security Level::Confidential",
+                self.privkey_uid,
+            )
+        )
+
+        protected_rd_plaintext, _ = await self.client.cover_crypt_decryption(
+            protected_rd_ciphertext, confidential_rd_fin_user_key_uid
+        )
+        self.assertEqual(protected_rd_plaintext, protected_rd_data)
+
+        # Removing access to an attribute
+        # 1 - Keep decryption access to ciphertext from old attributes but remove the right to encrypt new data
+
+        await self.client.disable_cover_crypt_attribute(
+            "Department::R&D", self.privkey_uid
+        )
+        # this method can also be used on hierarchical axis
+        await self.client.disable_cover_crypt_attribute(
+            "Security Level::Protected", self.privkey_uid
+        )
+
+        # disabled attributes can no longer be used to encrypt data
+
+        # New data encryption for `Department::R&D` will fail
+        with self.assertRaises(Exception):
+            await self.client.cover_crypt_encryption(
+                "Department::R&D && Security Level::Protected",
+                protected_rd_data,
+                self.pubkey_uid,
+            )
+
+        # Decryption of old ciphertext is still possible
+        new_protected_rd_plaintext, _ = await self.client.cover_crypt_decryption(
+            protected_rd_ciphertext, confidential_rd_fin_user_key_uid
+        )
+        self.assertEqual(new_protected_rd_plaintext, protected_rd_data)
 
     async def test_combined_kms_native(self) -> None:
         # Retrieve public key

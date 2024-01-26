@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
-from typing import List, Optional, Tuple, Union
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
-from cloudproof_cover_crypt import (
-    Attribute,
-    MasterPublicKey,
-    MasterSecretKey,
-    Policy,
-    UserSecretKey,
-)
+from cloudproof_cover_crypt import Attribute
+from cloudproof_cover_crypt import MasterPublicKey
+from cloudproof_cover_crypt import MasterSecretKey
+from cloudproof_cover_crypt import Policy
+from cloudproof_cover_crypt import UserSecretKey
 from cosmian_kms import KmsClient as InternalKmsClient
 from cosmian_kms import KmsObject
+from cosmian_kms import UidOrTags
 
 
 class KmsClient(InternalKmsClient):
@@ -31,8 +33,7 @@ class KmsClient(InternalKmsClient):
     async def rotate_cover_crypt_attributes(
         self,
         attributes: List[Union[Attribute, str]],
-        master_secret_key_identifier: Optional[str],
-        tags: Optional[List[str]] = None,
+        master_secret_key_identifier: UidOrTags,
     ) -> Tuple[str, str]:
         """Rotate the given policy attributes. This will rekey in the KMS:
             - the Master Keys
@@ -40,8 +41,7 @@ class KmsClient(InternalKmsClient):
 
         Args:
             attributes (List[Union[Attribute, str]]): attributes to rotate e.g. ["Department::HR"]
-            master_secret_key_identifier (str): master secret key UID
-            tags: (Optional[List[str][]) tags to retrieve the master secret key if it the id is not satisfied
+            master_secret_key_identifier (Union[str, List[str])): master secret key referenced by its UID or a list of tags
 
         Returns:
             Tuple[str, str]: (Public key UID, Master secret key UID)
@@ -52,15 +52,13 @@ class KmsClient(InternalKmsClient):
                 for attr in attributes
             ],
             master_secret_key_identifier,
-            tags,
         )
 
     async def cover_crypt_encryption(
         self,
         encryption_policy_str: str,
         data: bytes,
-        public_key_identifier: Optional[str],
-        tags: Optional[List[str]] = None,
+        public_key_identifier: UidOrTags,
         header_metadata: Optional[bytes] = None,
         authentication_data: Optional[bytes] = None,
     ) -> bytes:
@@ -70,8 +68,7 @@ class KmsClient(InternalKmsClient):
         Args:
             encryption_policy_str (str): the access policy to use for encryption
             data (bytes): data to encrypt
-            public_key_identifier (str): identifier of the public key
-            tags: (Optional[List[str]]): tags to use to find the public key
+            public_key_identifier (Union[str, List[str]]): public key unique id or associated tags
             header_metadata (Optional[bytes]): additional data to encrypt in the header
             authentication_data (Optional[bytes]): authentication data to use in the encryption
 
@@ -83,7 +80,6 @@ class KmsClient(InternalKmsClient):
                 encryption_policy_str,
                 data,
                 public_key_identifier,
-                tags,
                 header_metadata,
                 authentication_data,
             )
@@ -92,33 +88,31 @@ class KmsClient(InternalKmsClient):
     async def cover_crypt_decryption(
         self,
         encrypted_data: bytes,
-        user_key_identifier: Optional[str],
-        tags: Optional[List[str]] = None,
+        user_key_identifier: UidOrTags,
         authentication_data: Optional[bytes] = None,
     ) -> Tuple[bytes, bytes]:
         """Hybrid decryption.
 
         Args:
             encrypted_data (bytes): encrypted header || symmetric ciphertext
-            user_key_identifier (str): user secret key identifier
-            tags: (Optional[List[str]]): tags to use to find the user key
+            user_key_identifier (Union[str, List[str]]): user secret key unique id or associated tags
             authentication_data (Optional[bytes]): authentication data to use in the decryption
 
         Returns:
             Future[Tuple[bytes, bytes]]: (plaintext bytes, header metadata bytes)
         """
         plaintext, header = await super().cover_crypt_decryption(
-            encrypted_data, user_key_identifier, tags, authentication_data
+            encrypted_data, user_key_identifier, authentication_data
         )
         return bytes(plaintext), bytes(header)
 
     async def retrieve_cover_crypt_public_master_key(
-        self, public_key_identifier: str
+        self, public_key_identifier: UidOrTags
     ) -> MasterPublicKey:
         """Fetch a CoverCrypt Public Master key.
 
         Args:
-            public_key_identifier (str): the key unique identifier in the KMS
+            public_key_identifier (Union[str, List[str]]): public key unique id or associated tags
 
         Returns:
             MasterPublicKey
@@ -127,12 +121,12 @@ class KmsClient(InternalKmsClient):
         return MasterPublicKey.from_bytes(object.key_block())
 
     async def retrieve_cover_crypt_private_master_key(
-        self, master_secret_key_identifier: str
+        self, master_secret_key_identifier: UidOrTags
     ) -> MasterSecretKey:
         """Fetch a CoverCrypt Private Master key.
 
         Args:
-            master_secret_key_identifier (str): the key unique identifier in the KMS
+            master_secret_key_identifier (str): the master secret key unique id or associated tags
 
         Returns:
             MasterSecretKey
@@ -141,12 +135,12 @@ class KmsClient(InternalKmsClient):
         return MasterSecretKey.from_bytes(object.key_block())
 
     async def retrieve_cover_crypt_user_decryption_key(
-        self, user_key_identifier: str
+        self, user_key_identifier: UidOrTags
     ) -> UserSecretKey:
         """Fetch a CoverCrypt Private User key.
 
         Args:
-            user_key_identifier (str): the key unique identifier in the KMS
+            user_key_identifier (Union[str, List[str]]): user secret key unique id or associated tags
 
         Returns:
             UserSecretKey
