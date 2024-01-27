@@ -505,9 +505,9 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
 
         # Encrypt data using KMS
         kms_ciphertext = await self.client.cover_crypt_encryption(
-            "Department::MKG && Security Level::Protected",
-            b"kms_message",
-            self.pubkey_uid,
+            encryption_policy_str="Department::MKG && Security Level::Protected",
+            data=b"kms_message",
+            public_key_identifier=self.pubkey_uid,
             header_metadata=b"kms_header",
             authentication_data=b"token1",
         )
