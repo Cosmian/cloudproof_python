@@ -52,7 +52,7 @@ done
 if [ $install_pyo3_build -gt 0 ]; then
   pip install -r requirements.txt
   bash scripts/ci_install_pyo3_builds.sh
-  pip install mypy types-termcolor>=1.1 types_redis>=4.3 requests>=2.28 types-requests>=2.28
+  pip install mypy "types-termcolor>=1.1" "types_redis>=4.3" "requests>=2.28" "types-requests>=2.28"
 fi
 if [ $test -gt 0 ]; then
   pip install dist/cloudproof_py*.whl

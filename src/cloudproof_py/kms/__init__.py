@@ -33,11 +33,7 @@ class KmsClient(InternalKmsClient):
     async def rotate_cover_crypt_attributes(
         self,
         attributes: List[Union[Attribute, str]],
-<<<<<<< HEAD
         master_secret_key_identifier: UidOrTags,
-=======
-        master_secret_key_identifier: Optional[str],
->>>>>>> ad9b01b (feat: support KMS 4.11)
     ) -> Tuple[str, str]:
         """Rotate the given policy attributes. This will rekey in the KMS:
             - the Master Keys
@@ -62,11 +58,7 @@ class KmsClient(InternalKmsClient):
         self,
         encryption_policy_str: str,
         data: bytes,
-<<<<<<< HEAD
         public_key_identifier: UidOrTags,
-=======
-        public_key_identifier: Optional[str],
->>>>>>> ad9b01b (feat: support KMS 4.11)
         header_metadata: Optional[bytes] = None,
         authentication_data: Optional[bytes] = None,
     ) -> bytes:
@@ -96,11 +88,7 @@ class KmsClient(InternalKmsClient):
     async def cover_crypt_decryption(
         self,
         encrypted_data: bytes,
-<<<<<<< HEAD
         user_key_identifier: UidOrTags,
-=======
-        user_key_identifier: Optional[str],
->>>>>>> ad9b01b (feat: support KMS 4.11)
         authentication_data: Optional[bytes] = None,
     ) -> Tuple[bytes, bytes]:
         """Hybrid decryption.
