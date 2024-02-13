@@ -134,18 +134,15 @@ def offline_example(policy: Policy):
         confidential_mkg_user_key.to_bytes()
     )
 
-    # rotate MKG attribute
-    policy.rotate(Attribute("Department", "MKG"))
-
-    # update master keys
-    cover_crypt.update_master_keys(policy, master_private_key, public_key)
+    # Rekey MKG attribute
+    cover_crypt.rekey_master_keys(
+        "Department::MKG", policy, master_private_key, public_key
+    )
 
     # update user key
     cover_crypt.refresh_user_secret_key(
         confidential_mkg_user_key,
-        "Department::MKG && Security Level::Confidential",
         master_private_key,
-        policy,
         keep_old_accesses=True,
     )
 
@@ -190,18 +187,13 @@ def offline_example(policy: Policy):
         # ==> the user is not be able to decrypt
         print("Expected error:", e)
 
-    # Clearing old rotations
-
-    policy.clear_old_attribute_values(Attribute("Department", "MKG"))
-    # old rotations for this attribute will be definitely removed from the master keys
-    cover_crypt.update_master_keys(policy, master_private_key, public_key)
+    # old keys for this attribute will be definitely removed from the master secret key
+    cover_crypt.prune_master_secret_key("Department::MKG", policy, master_private_key)
 
     # update user key
     cover_crypt.refresh_user_secret_key(
         confidential_mkg_user_key,
-        "Department::MKG && Security Level::Confidential",
         master_private_key,
-        policy,
         keep_old_accesses=True,  # will not keep removed rotations
     )
 
@@ -259,9 +251,7 @@ def offline_example(policy: Policy):
     cover_crypt.update_master_keys(policy, master_private_key, public_key)
     cover_crypt.refresh_user_secret_key(
         confidential_rd_fin_user_key,
-        "(Department::R&D || Department::FIN) && Security Level::Confidential",
         master_private_key,
-        policy,
         keep_old_accesses=True,
     )
 
@@ -294,14 +284,13 @@ def offline_example(policy: Policy):
 
     # after updating the keys, removed attributes can no longer be used to encrypt or decrypt
     cover_crypt.update_master_keys(policy, master_private_key, public_key)
+    cover_crypt.refresh_user_secret_key(
+        confidential_rd_fin_user_key,
+        master_private_key,
+        keep_old_accesses=True,
+    )
     try:
-        cover_crypt.refresh_user_secret_key(
-            confidential_rd_fin_user_key,
-            "(Department::R&D || Department::FIN) && Security Level::Confidential",  # `Department::R&D` can no longer be used here
-            master_private_key,
-            policy,
-            keep_old_accesses=True,
-        )
+        cover_crypt.decrypt(confidential_rd_fin_user_key, protected_rd_ciphertext)
     except Exception as e:
         print("Expected error:", e)
 
@@ -314,12 +303,10 @@ def offline_example(policy: Policy):
     # updating the keys will remove all access to previous ciphertext encrypted for `Security Level`
     cover_crypt.update_master_keys(policy, master_private_key, public_key)
     try:
-        cover_crypt.refresh_user_secret_key(
-            confidential_rd_fin_user_key,
-            "Department::FIN && Security Level::Confidential",  # `Security Level` can no longer be used here
+        cover_crypt.generate_user_secret_key(
             master_private_key,
+            "Department::FIN && Security Level::Confidential",  # `Security Level` can no longer be used here
             policy,
-            keep_old_accesses=True,
         )
     except Exception as e:
         print("Expected error:", e)
