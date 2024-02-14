@@ -10,7 +10,7 @@ install_lib() {
 
 install_lib "v2.5.0"
 if [ $? -ne 0 ]; then
-    branch="last_build/feature/covercrypt_rekey"
+    branch="feature/covercrypt_rekey"
     echo installing python from branch ${branch}
     install_lib "last_build/${branch}"
 fi
