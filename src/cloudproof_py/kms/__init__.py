@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
-from cloudproof_cover_crypt import Attribute
 from cloudproof_cover_crypt import MasterPublicKey
 from cloudproof_cover_crypt import MasterSecretKey
 from cloudproof_cover_crypt import Policy
@@ -29,30 +27,6 @@ class KmsClient(InternalKmsClient):
         if isinstance(policy, Policy):
             return await super().create_cover_crypt_master_key_pair(policy.to_bytes())
         return await super().create_cover_crypt_master_key_pair(policy)
-
-    async def rotate_cover_crypt_attributes(
-        self,
-        attributes: List[Union[Attribute, str]],
-        master_secret_key_identifier: UidOrTags,
-    ) -> Tuple[str, str]:
-        """Rotate the given policy attributes. This will rekey in the KMS:
-            - the Master Keys
-            - all User Decryption Keys that contain one of these attributes in their policy.
-
-        Args:
-            attributes (List[Union[Attribute, str]]): attributes to rotate e.g. ["Department::HR"]
-            master_secret_key_identifier (Union[str, List[str])): master secret key referenced by its UID or a list of tags
-
-        Returns:
-            Tuple[str, str]: (Public key UID, Master secret key UID)
-        """
-        return await super().rotate_cover_crypt_attributes(
-            [
-                attr.to_string() if isinstance(attr, Attribute) else attr
-                for attr in attributes
-            ],
-            master_secret_key_identifier,
-        )
 
     async def cover_crypt_encryption(
         self,

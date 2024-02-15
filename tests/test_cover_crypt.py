@@ -275,9 +275,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         (
             self.pubkey_uid,
             self.privkey_uid,
-        ) = await self.client.create_cover_crypt_master_key_pair(
-            b"""{"version":"V1","last_attribute_value":6,"max_attribute_creations":4294967295,"axes":{"Department":{"attribute_names":["FIN","MKG","HR"],"is_hierarchical":false},"Security Level":{"attribute_names":["Protected","Confidential","Top Secret"],"is_hierarchical":true}},"attributes":{"Department::MKG":{"values":[5],"encryption_hint":"Classic"},"Security Level::Protected":{"values":[1],"encryption_hint":"Classic"},"Department::HR":{"values":[6],"encryption_hint":"Classic"},"Security Level::Top Secret":{"values":[3],"encryption_hint":"Classic"},"Security Level::Confidential":{"values":[2],"encryption_hint":"Classic"},"Department::FIN":{"values":[4],"encryption_hint":"Classic"}}}"""
-        )
+        ) = await self.client.create_cover_crypt_master_key_pair(self.policy)
 
     async def test_doc_example_kms(self) -> None:
         protected_mkg_data = b"protected_mkg_message"
@@ -354,12 +352,9 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
             )
         )
 
-        # rotate MKG attribute
-        (
-            new_pubkey_uid,
-            new_privkey_uid,
-        ) = await self.client.rotate_cover_crypt_attributes(
-            ["Department::MKG"], self.privkey_uid
+        # rekey MKG attribute
+        await self.client.rekey_cover_crypt_access_policy(
+            "Department::MKG", self.privkey_uid
         )
 
         confidential_mkg_data = b"confidential_secret_mkg_message"
@@ -403,6 +398,17 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(Exception):
             await self.client.cover_crypt_decryption(
                 confidential_mkg_ciphertext, old_confidential_mkg_user_uid
+            )
+
+        # Remove old keys for the MKG attribute
+        await self.client.prune_cover_crypt_access_policy(
+            "Department::MKG", self.privkey_uid
+        )
+
+        # decrypting old messages will fail
+        with self.assertRaises(Exception):
+            old_protected_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
+                protected_mkg_ciphertext, confidential_mkg_user_uid
             )
 
         # Edit Policy

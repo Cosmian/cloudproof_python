@@ -403,14 +403,13 @@ async def kms_example(policy: Policy):
     )
     assert protected_fin_plaintext == protected_fin_data
 
-    # Rotating Attributes
+    # Rekey
 
-    # rotate MKG attribute
+    # rekey MKG attribute
     # all active keys will be rekeyed automatically
-    await kms_client.rotate_cover_crypt_attributes(["Department::MKG"], private_key_uid)
+    await kms_client.rekey_cover_crypt_access_policy("Department::MKG", private_key_uid)
 
     # New confidential marketing message
-
     confidential_mkg_data = b"confidential_secret_mkg_message"
     confidential_mkg_ciphertext = await kms_client.cover_crypt_encryption(
         "Department::MKG && Security Level::Confidential",
@@ -427,6 +426,24 @@ async def kms_example(policy: Policy):
     assert old_protected_mkg_plaintext == protected_mkg_data
 
     # decrypting the "new" `confidential marketing` message
+    new_confidential_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
+        confidential_mkg_ciphertext, confidential_mkg_user_uid
+    )
+    assert new_confidential_mkg_plaintext == confidential_mkg_data
+
+    # Remove old keys for the MKG attribute
+    await kms_client.prune_cover_crypt_access_policy("Department::MKG", private_key_uid)
+
+    # decrypting old messages will fail
+    try:
+        old_protected_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
+            protected_mkg_ciphertext, confidential_mkg_user_uid
+        )
+    except Exception as e:
+        # ==> the user is not be able to decrypt
+        print("Expected error:", e)
+
+    # decrypting the "new" message will still work
     new_confidential_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
         confidential_mkg_ciphertext, confidential_mkg_user_uid
     )
