@@ -40,7 +40,7 @@ jobs:
       extension: so
       destination: linux-x86-64
       os: ubuntu-20.04
-      kms-version: kmsghcr.io/cosmian/kms:feature-covercrypt_rekey
+      kms-version: ghcr.io/cosmian/kms:feature-covercrypt_rekey
       findex-cloud-version: 0.3.1
       copy_fresh_build: false
       copy_regression_files: |

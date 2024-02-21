@@ -127,7 +127,7 @@ def offline_example(policy: Policy):
     )
     assert protected_fin_plaintext == protected_fin_data
 
-    # Rotating Attributes
+    # Rekey
 
     # make a copy of the current user key
     old_confidential_mkg_user_key = UserSecretKey.from_bytes(
@@ -180,14 +180,13 @@ def offline_example(policy: Policy):
 
     # decrypting the "new" `confidential marketing` message with the old key fails
     try:
-        new_confidential_mkg_plaintext, _ = cover_crypt.decrypt(
-            old_confidential_mkg_user_key, confidential_mkg_ciphertext
-        )
+        cover_crypt.decrypt(old_confidential_mkg_user_key, confidential_mkg_ciphertext)
     except Exception as e:
         # ==> the user is not be able to decrypt
         print("Expected error:", e)
 
-    # old keys for this attribute will be definitely removed from the master secret key
+    # Prune : remove old keys for the MKG attribute
+
     cover_crypt.prune_master_secret_key("Department::MKG", policy, master_private_key)
 
     # update user key
@@ -239,6 +238,15 @@ def offline_example(policy: Policy):
         confidential_rd_fin_user_key, protected_rd_ciphertext
     )
     assert protected_rd_plaintext == protected_rd_data
+
+    # Rename attribute "Department::MKG" to "Department::Marketing"
+    policy.rename_attribute(Attribute("Department", "MKG"), "Marketing")
+
+    # Encryption and decryption work the same even with previously generated keys and ciphers
+    confidential_mkg_plaintext, _ = cover_crypt.decrypt(
+        confidential_mkg_user_key, confidential_mkg_ciphertext
+    )
+    assert confidential_mkg_plaintext == confidential_mkg_data
 
     # Removing access to an attribute
     # 1 - Keep decryption access to ciphertext from old attributes but remove the right to encrypt new data
@@ -405,7 +413,7 @@ async def kms_example(policy: Policy):
 
     # Rekey
 
-    # rekey MKG attribute
+    # Rekey all keys having access to "Department::MKG"
     # all active keys will be rekeyed automatically
     await kms_client.rekey_cover_crypt_access_policy("Department::MKG", private_key_uid)
 
@@ -431,7 +439,8 @@ async def kms_example(policy: Policy):
     )
     assert new_confidential_mkg_plaintext == confidential_mkg_data
 
-    # Remove old keys for the MKG attribute
+    # Prune : remove old keys for the MKG attribute
+
     await kms_client.prune_cover_crypt_access_policy("Department::MKG", private_key_uid)
 
     # decrypting old messages will fail
@@ -451,6 +460,23 @@ async def kms_example(policy: Policy):
 
     # Edit Policy
 
+    # Rename attribute "Department::MKG" to "Department::Marketing"
+    await kms_client.rename_cover_crypt_attribute(
+        "Department::MKG", "Marketing", private_key_uid
+    )
+
+    # decryption rights have not been modified even for previously generated keys and ciphers
+    confidential_mkg_plaintext, _ = await kms_client.cover_crypt_decryption(
+        confidential_mkg_ciphertext,
+        confidential_mkg_user_uid,
+    )
+    assert confidential_mkg_plaintext == confidential_mkg_data
+
+    # new encryption or user key generation must use the new attribute name
+    _ = await kms_client.cover_crypt_encryption(
+        "Department::Marketing && Security Level::Top Secret", b"test", public_key_uid
+    )
+
     # Addition
     await kms_client.add_cover_crypt_attribute(
         "Department::R&D", False, private_key_uid
@@ -464,13 +490,14 @@ async def kms_example(policy: Policy):
     except Exception as e:
         print("Expected error:", e)
 
-    # master keys are automatically updated with the new attributes
+    # we can encrypt a message for the newly created `R&D` attribute
     protected_rd_data = b"top_secret_mkg_message"
     protected_rd_ciphertext = await kms_client.cover_crypt_encryption(
         "Department::R&D && Security Level::Protected",
         protected_rd_data,
         public_key_uid,
     )
+    # and generate a user key with access rights for this attribute
     confidential_rd_fin_user_key_uid = (
         await kms_client.create_cover_crypt_user_decryption_key(
             "(Department::R&D || Department::FIN) && Security Level::Confidential",
@@ -478,6 +505,7 @@ async def kms_example(policy: Policy):
         )
     )
 
+    # we successfully decrypt the r&d message
     protected_rd_plaintext, _ = await kms_client.cover_crypt_decryption(
         protected_rd_ciphertext, confidential_rd_fin_user_key_uid
     )
@@ -494,7 +522,7 @@ async def kms_example(policy: Policy):
 
     # disabled attributes can no longer be used to encrypt data
 
-    # New data encryption for `Department::R&D` will fail
+    # new data encryption for `Department::R&D` will fail
     try:
         await kms_client.cover_crypt_encryption(
             "Department::R&D && Security Level::Protected",
@@ -504,11 +532,32 @@ async def kms_example(policy: Policy):
     except Exception as e:
         print("Expected error:", e)
 
-    # Decryption of old ciphertext is still possible
+    # decryption of old ciphertext is still possible
     new_protected_rd_plaintext, _ = await kms_client.cover_crypt_decryption(
         protected_rd_ciphertext, confidential_rd_fin_user_key_uid
     )
     assert new_protected_rd_plaintext == protected_rd_data
+
+    # remove attributes
+    # /!\ this operation is irreversible and may cause data loss
+
+    await kms_client.remove_cover_crypt_attribute("Department::R&D", private_key_uid)
+    # removing attribute from hierarchical axis is prohibited
+    try:
+        await kms_client.remove_cover_crypt_attribute(
+            "Security Level::Protected", private_key_uid
+        )
+    except Exception as e:
+        print("Expected error:", e)
+
+    # removed attributes can no longer be used to encrypt or decrypt
+    try:
+        await kms_client.decrypt(
+            protected_rd_ciphertext,
+            confidential_rd_fin_user_key_uid,
+        )
+    except Exception as e:
+        print("Expected error:", e)
 
 
 if __name__ == "__main__":
