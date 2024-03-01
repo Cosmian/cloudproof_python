@@ -434,11 +434,18 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(confidential_mkg_plaintext, confidential_mkg_data)
 
         # New encryption or user key generation must use the new attribute name
-        _ = await self.client.cover_crypt_encryption(
+        topSecret_marketing_data = b"top_secret_marketing_message"
+        topSecret_marketing_ciphertext = await self.client.cover_crypt_encryption(
             "Department::Marketing && Security Level::Top Secret",
-            b"test",
+            topSecret_marketing_data,
             self.pubkey_uid,
         )
+
+        # new "Marketing" message can still be decrypted with "MKG" keys
+        topSecret_marketing_plaintext, _ = await self.client.cover_crypt_decryption(
+            topSecret_marketing_ciphertext, topSecret_mkg_fin_user_uid
+        )
+        self.assertEqual(topSecret_marketing_plaintext, topSecret_marketing_data)
 
         # Addition
         await self.client.add_cover_crypt_attribute(
@@ -452,7 +459,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
             )
 
         # master keys are automatically updated with the new attributes
-        protected_rd_data = b"top_secret_mkg_message"
+        protected_rd_data = b"protected_mkg_message"
         protected_rd_ciphertext = await self.client.cover_crypt_encryption(
             "Department::R&D && Security Level::Protected",
             protected_rd_data,
