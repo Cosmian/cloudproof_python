@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.0.0] - 2024-03-08
+
+### Features
+
+- Update KMS rekey and policy edit example
+- Add generic KMS methods for symmetric key
+
+### Testing
+
+- Update KMS tests with new rekey methods
+
 ## [4.2.0] - 2023-11-22
 
 ### Features

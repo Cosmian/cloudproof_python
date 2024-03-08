@@ -7,7 +7,7 @@ cloudproof_py = ["py.typed", "*.pyi"]
 
 [project]
 name = "cloudproof_py"
-version = "4.2.0"
+version = "5.0.0"
 authors = [{ name = "Cosmian Tech", email = "tech@cosmian.com" }]
 description = "Python library for Cosmian Cloudproof"
 readme = "README.md"
@@ -20,7 +20,7 @@ dependencies = [
   "cloudproof-anonymization >= 0.1.0, < 1.0.0",
   "cover-crypt >= 14.0.0, < 15.0.0",
   "findex >= 6.0.0, < 7.0.0",
-  "cosmian-kms >= 4.11.0, < 5.0.0",
+  "cosmian-kms >= 4.13.0, < 5.0.0",
   "cloudproof-fpe >= 0.1.0, < 1.0.0",
 ]
 
