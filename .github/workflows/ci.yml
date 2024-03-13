@@ -24,7 +24,7 @@ jobs:
     with:
       branch: ${{ github.head_ref }}
       target: x86_64-unknown-linux-gnu
-      kms-version: 4.11.3
+      kms-version: ghcr.io/cosmian/kms:4.13.0
       findex-cloud-version: 0.3.1
       copy_fresh_build: false
       regression_files: |
@@ -35,12 +35,12 @@ jobs:
     needs: cloudproof_python
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_java_in_docker.yml@develop
     with:
-      branch: fix/kmip_serialization
+      branch: feature/covercrypt_rekey
       target: x86_64-unknown-linux-gnu
       extension: so
       destination: linux-x86-64
       os: ubuntu-20.04
-      kms-version: 4.11.3
+      kms-version: ghcr.io/cosmian/kms:4.13.0
       findex-cloud-version: 0.3.1
       copy_fresh_build: false
       copy_regression_files: |
@@ -51,9 +51,9 @@ jobs:
     needs: cloudproof_python
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_js.yml@develop
     with:
-      branch: feature/support_kms_js_3_1
+      branch: feature/covercrypt_rekey
       target: wasm32-unknown-unknown
-      kms-version: 4.11.3
+      kms-version: ghcr.io/cosmian/kms:4.13.0
       findex-cloud-version: 0.3.1
       copy_fresh_build: false
       copy_regression_files: |
@@ -65,7 +65,7 @@ jobs:
       - cloudproof_python
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_flutter.yml@develop
     with:
-      branch: develop
+      branch: feature/covercrypt_rekey
       target: x86_64-unknown-linux-gnu
       extension: so
       copy_fresh_build: false
