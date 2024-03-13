@@ -51,7 +51,7 @@ jobs:
     needs: cloudproof_python
     uses: Cosmian/reusable_workflows/.github/workflows/cloudproof_js.yml@develop
     with:
-      branch: feature/covercrypt_rekey
+      branch: develop
       target: wasm32-unknown-unknown
       kms-version: ghcr.io/cosmian/kms:4.13.0
       findex-cloud-version: 0.3.1
