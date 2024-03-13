@@ -8,7 +8,7 @@ install_lib() {
         rm linux.zip && rm -rf x86_64*
 }
 
-install_lib "v2.5.0"
+install_lib "v3.0.0"
 if [ $? -ne 0 ]; then
     branch="feature/covercrypt_rekey"
     echo installing python from branch ${branch}

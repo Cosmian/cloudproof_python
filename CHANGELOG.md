@@ -6,8 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Features
 
-- Update KMS rekey and policy edit example
-- Add generic KMS methods for symmetric key
+- Upgrade to CoverCrypt `14.0.0`:
+  - Update KMS rekey and policy edit example
+  - Add generic KMS methods for symmetric key
 
 ### Testing
 
