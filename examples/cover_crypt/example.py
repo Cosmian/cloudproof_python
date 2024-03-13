@@ -173,7 +173,7 @@ async def main(use_kms: bool = True):
         # ==> the user is not be able to decrypt
         print("Expected error:", e)
 
-    # Prune : remove old keys for the MKG attribute
+    # Prune: remove old keys for the MKG attribute
 
     cover_crypt.prune_master_secret_key("Department::MKG", policy, master_private_key)
 
