@@ -1,15 +1,13 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from cloudproof_py.cover_crypt import (
-    Attribute,
-    CoverCrypt,
-    MasterPublicKey,
-    MasterSecretKey,
-    Policy,
-    PolicyAxis,
-    UserSecretKey,
-)
+from cloudproof_py.cover_crypt import Attribute
+from cloudproof_py.cover_crypt import CoverCrypt
+from cloudproof_py.cover_crypt import MasterPublicKey
+from cloudproof_py.cover_crypt import MasterSecretKey
+from cloudproof_py.cover_crypt import Policy
+from cloudproof_py.cover_crypt import PolicyAxis
+from cloudproof_py.cover_crypt import UserSecretKey
 from cloudproof_py.kms import KmsClient
 
 
@@ -58,61 +56,58 @@ class TestCoverCryptNative(unittest.TestCase):
             protected_fin_data,
         )
 
-        confidential_mkg_userKey = cover_crypt.generate_user_secret_key(
+        confidential_mkg_user_key = cover_crypt.generate_user_secret_key(
             master_private_key,
             "Department::MKG && Security Level::Confidential",
             policy,
         )
 
-        topSecret_mkg_fin_userKey = cover_crypt.generate_user_secret_key(
+        topSecret_mkg_fin_user_key = cover_crypt.generate_user_secret_key(
             master_private_key,
             "(Department::MKG || Department::FIN) && Security Level::Top Secret",
             policy,
         )
 
         protected_mkg_plaintext, _ = cover_crypt.decrypt(
-            confidential_mkg_userKey, protected_mkg_ciphertext
+            confidential_mkg_user_key, protected_mkg_ciphertext
         )
         self.assertEqual(protected_mkg_plaintext, protected_mkg_data)
 
         with self.assertRaises(Exception):
-            cover_crypt.decrypt(confidential_mkg_userKey, topSecret_mkg_ciphertext)
+            cover_crypt.decrypt(confidential_mkg_user_key, topSecret_mkg_ciphertext)
 
         with self.assertRaises(Exception):
-            cover_crypt.decrypt(confidential_mkg_userKey, protected_fin_ciphertext)
+            cover_crypt.decrypt(confidential_mkg_user_key, protected_fin_ciphertext)
 
         protected_mkg_plaintext2, _ = cover_crypt.decrypt(
-            topSecret_mkg_fin_userKey, protected_mkg_ciphertext
+            topSecret_mkg_fin_user_key, protected_mkg_ciphertext
         )
         self.assertEqual(protected_mkg_plaintext2, protected_mkg_data)
 
         topSecret_mkg_plaintext, _ = cover_crypt.decrypt(
-            topSecret_mkg_fin_userKey, topSecret_mkg_ciphertext
+            topSecret_mkg_fin_user_key, topSecret_mkg_ciphertext
         )
         self.assertEqual(topSecret_mkg_plaintext, topSecret_mkg_data)
 
         protected_fin_plaintext, _ = cover_crypt.decrypt(
-            topSecret_mkg_fin_userKey, protected_fin_ciphertext
+            topSecret_mkg_fin_user_key, protected_fin_ciphertext
         )
         self.assertEqual(protected_fin_plaintext, protected_fin_data)
 
         # make a copy of the current user key
         old_confidential_mkg_userKey = UserSecretKey.from_bytes(
-            confidential_mkg_userKey.to_bytes()
+            confidential_mkg_user_key.to_bytes()
         )
 
-        # rotate MKG attribute
-        policy.rotate(Attribute("Department", "MKG"))
-
-        # update master keys
-        cover_crypt.update_master_keys(policy, master_private_key, public_key)
+        # rekey MKG attribute
+        cover_crypt.rekey_master_keys(
+            "Department::MKG", policy, master_private_key, public_key
+        )
 
         # update user key
         cover_crypt.refresh_user_secret_key(
-            confidential_mkg_userKey,
-            "Department::MKG && Security Level::Confidential",
+            confidential_mkg_user_key,
             master_private_key,
-            policy,
             keep_old_accesses=True,
         )
 
@@ -126,13 +121,13 @@ class TestCoverCryptNative(unittest.TestCase):
 
         # decrypting the "old" `protected marketing` message
         old_protected_mkg_plaintext, _ = cover_crypt.decrypt(
-            confidential_mkg_userKey, protected_mkg_ciphertext
+            confidential_mkg_user_key, protected_mkg_ciphertext
         )
         self.assertEqual(old_protected_mkg_plaintext, protected_mkg_data)
 
         # decrypting the "new" `confidential marketing` message
         new_confidential_mkg_plaintext, _ = cover_crypt.decrypt(
-            confidential_mkg_userKey, confidential_mkg_ciphertext
+            confidential_mkg_user_key, confidential_mkg_ciphertext
         )
         self.assertEqual(new_confidential_mkg_plaintext, confidential_mkg_data)
 
@@ -146,31 +141,29 @@ class TestCoverCryptNative(unittest.TestCase):
 
         # decrypting the "new" `confidential marketing` message with the old key fails
         with self.assertRaises(Exception):
-            new_confidential_mkg_plaintext, _ = cover_crypt.decrypt(
+            cover_crypt.decrypt(
                 old_confidential_mkg_userKey, confidential_mkg_ciphertext
             )
 
-        # Clearing old rotations
-        policy.clear_old_attribute_values(Attribute("Department", "MKG"))
-        # old rotations for this attribute will be definitely removed from the master keys
-        cover_crypt.update_master_keys(policy, master_private_key, public_key)
+        # old keys for this attribute will be definitely removed from the master secret key
+        cover_crypt.prune_master_secret_key(
+            "Department::MKG", policy, master_private_key
+        )
 
         # update user key
         cover_crypt.refresh_user_secret_key(
-            confidential_mkg_userKey,
-            "Department::MKG && Security Level::Confidential",
+            confidential_mkg_user_key,
             master_private_key,
-            policy,
             keep_old_accesses=True,  # will not keep removed rotations
         )
 
         # decrypting the "old" `protected marketing` message will fail
         with self.assertRaises(Exception):
-            cover_crypt.decrypt(confidential_mkg_userKey, protected_mkg_ciphertext)
+            cover_crypt.decrypt(confidential_mkg_user_key, protected_mkg_ciphertext)
 
         # decrypting the "new" `confidential marketing` message will still work
         new_confidential_mkg_plaintext, _ = cover_crypt.decrypt(
-            confidential_mkg_userKey, confidential_mkg_ciphertext
+            confidential_mkg_user_key, confidential_mkg_ciphertext
         )
         self.assertEqual(new_confidential_mkg_plaintext, confidential_mkg_data)
 
@@ -200,6 +193,15 @@ class TestCoverCryptNative(unittest.TestCase):
         )
         self.assertEqual(protected_rd_plaintext, protected_rd_data)
 
+        # Rename attribute "Department::MKG" to "Department::Marketing"
+        policy.rename_attribute(Attribute("Department", "MKG"), "Marketing")
+
+        # Encryption and decryption work the same even with previously generated keys and ciphers
+        confidential_mkg_plaintext, _ = cover_crypt.decrypt(
+            confidential_mkg_user_key, confidential_mkg_ciphertext
+        )
+        self.assertEqual(confidential_mkg_plaintext, confidential_mkg_data)
+
         # Disable attribute
         policy.disable_attribute(Attribute("Department", "R&D"))
         # this method can also be used on hierarchical axis
@@ -209,9 +211,7 @@ class TestCoverCryptNative(unittest.TestCase):
         cover_crypt.update_master_keys(policy, master_private_key, public_key)
         cover_crypt.refresh_user_secret_key(
             confidential_rd_fin_user_key,
-            "(Department::R&D || Department::FIN) && Security Level::Confidential",
             master_private_key,
-            policy,
             keep_old_accesses=True,
         )
 
@@ -238,14 +238,13 @@ class TestCoverCryptNative(unittest.TestCase):
 
         # after updating the keys, removed attributes can no longer be used to encrypt or decrypt
         cover_crypt.update_master_keys(policy, master_private_key, public_key)
+        cover_crypt.refresh_user_secret_key(
+            confidential_rd_fin_user_key,
+            master_private_key,
+            keep_old_accesses=True,
+        )
         with self.assertRaises(Exception):
-            cover_crypt.refresh_user_secret_key(
-                confidential_rd_fin_user_key,
-                "(Department::R&D || Department::FIN) && Security Level::Confidential",  # `Department::R&D` can no longer be used here
-                master_private_key,
-                policy,
-                keep_old_accesses=True,
-            )
+            cover_crypt.decrypt(confidential_rd_fin_user_key, protected_rd_ciphertext)
 
         # Removing an axis
         policy.remove_axis("Security Level")
@@ -253,12 +252,10 @@ class TestCoverCryptNative(unittest.TestCase):
         # updating the keys will remove all access to previous ciphertext encrypted for `Security Level`
         cover_crypt.update_master_keys(policy, master_private_key, public_key)
         with self.assertRaises(Exception):
-            cover_crypt.refresh_user_secret_key(
-                confidential_rd_fin_user_key,
-                "Department::FIN && Security Level::Confidential",  # `Security Level` can no longer be used here
+            cover_crypt.generate_user_secret_key(
                 master_private_key,
+                "Department::FIN && Security Level::Confidential",  # `Security Level` can no longer be used here
                 policy,
-                keep_old_accesses=True,
             )
 
 
@@ -288,9 +285,7 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         (
             self.pubkey_uid,
             self.privkey_uid,
-        ) = await self.client.create_cover_crypt_master_key_pair(
-            b"""{"version":"V1","last_attribute_value":6,"max_attribute_creations":4294967295,"axes":{"Department":{"attribute_names":["FIN","MKG","HR"],"is_hierarchical":false},"Security Level":{"attribute_names":["Protected","Confidential","Top Secret"],"is_hierarchical":true}},"attributes":{"Department::MKG":{"values":[5],"encryption_hint":"Classic"},"Security Level::Protected":{"values":[1],"encryption_hint":"Classic"},"Department::HR":{"values":[6],"encryption_hint":"Classic"},"Security Level::Top Secret":{"values":[3],"encryption_hint":"Classic"},"Security Level::Confidential":{"values":[2],"encryption_hint":"Classic"},"Department::FIN":{"values":[4],"encryption_hint":"Classic"}}}"""
-        )
+        ) = await self.client.create_cover_crypt_master_key_pair(self.policy)
 
     async def test_doc_example_kms(self) -> None:
         protected_mkg_data = b"protected_mkg_message"
@@ -367,12 +362,9 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
             )
         )
 
-        # rotate MKG attribute
-        (
-            new_pubkey_uid,
-            new_privkey_uid,
-        ) = await self.client.rotate_cover_crypt_attributes(
-            ["Department::MKG"], self.privkey_uid
+        # rekey MKG attribute
+        await self.client.rekey_cover_crypt_access_policy(
+            "Department::MKG", self.privkey_uid
         )
 
         confidential_mkg_data = b"confidential_secret_mkg_message"
@@ -396,13 +388,11 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
 
         # Importing NON rekeyed key
         old_confidential_mkg_user_uid = (
-            await self.client.import_cover_crypt_user_decryption_key_request(
+            await self.client.import_cover_crypt_user_decryption_key(
                 old_confidential_mkg_user_key.to_bytes(),
                 False,
                 self.privkey_uid,
                 "Department::MKG && Security Level::Confidential",
-                None,
-                False,
             )
         )
 
@@ -416,6 +406,120 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(Exception):
             await self.client.cover_crypt_decryption(
                 confidential_mkg_ciphertext, old_confidential_mkg_user_uid
+            )
+
+        # Remove old keys for the MKG attribute
+        await self.client.prune_cover_crypt_access_policy(
+            "Department::MKG", self.privkey_uid
+        )
+
+        # decrypting old messages will fail
+        with self.assertRaises(Exception):
+            old_protected_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
+                protected_mkg_ciphertext, confidential_mkg_user_uid
+            )
+
+        # Edit Policy
+
+        # Rename attribute "Department::MKG" to "Department::Marketing"
+        await self.client.rename_cover_crypt_attribute(
+            "Department::MKG", "Marketing", self.privkey_uid
+        )
+
+        # Decryption rights have not been modified even for previously generated keys and ciphers
+        confidential_mkg_plaintext, _ = await self.client.cover_crypt_decryption(
+            confidential_mkg_ciphertext,
+            confidential_mkg_user_uid,
+        )
+        self.assertEqual(confidential_mkg_plaintext, confidential_mkg_data)
+
+        # New encryption or user key generation must use the new attribute name
+        topSecret_marketing_data = b"top_secret_marketing_message"
+        topSecret_marketing_ciphertext = await self.client.cover_crypt_encryption(
+            "Department::Marketing && Security Level::Top Secret",
+            topSecret_marketing_data,
+            self.pubkey_uid,
+        )
+
+        # new "Marketing" message can still be decrypted with "MKG" keys
+        topSecret_marketing_plaintext, _ = await self.client.cover_crypt_decryption(
+            topSecret_marketing_ciphertext, topSecret_mkg_fin_user_uid
+        )
+        self.assertEqual(topSecret_marketing_plaintext, topSecret_marketing_data)
+
+        # Addition
+        await self.client.add_cover_crypt_attribute(
+            "Department::R&D", False, self.privkey_uid
+        )
+
+        # hierarchical axis are immutable (no addition nor deletion allowed)
+        with self.assertRaises(Exception):
+            await self.client.add_cover_crypt_attribute(
+                "Security Level::Classified", False, self.privkey_uid
+            )
+
+        # master keys are automatically updated with the new attributes
+        protected_rd_data = b"protected_mkg_message"
+        protected_rd_ciphertext = await self.client.cover_crypt_encryption(
+            "Department::R&D && Security Level::Protected",
+            protected_rd_data,
+            self.pubkey_uid,
+        )
+        confidential_rd_fin_user_key_uid = (
+            await self.client.create_cover_crypt_user_decryption_key(
+                "(Department::R&D || Department::FIN) && Security Level::Confidential",
+                self.privkey_uid,
+            )
+        )
+
+        protected_rd_plaintext, _ = await self.client.cover_crypt_decryption(
+            protected_rd_ciphertext, confidential_rd_fin_user_key_uid
+        )
+        self.assertEqual(protected_rd_plaintext, protected_rd_data)
+
+        # Removing access to an attribute
+        # 1 - Keep decryption access to ciphertext from old attributes but remove the right to encrypt new data
+
+        await self.client.disable_cover_crypt_attribute(
+            "Department::R&D", self.privkey_uid
+        )
+        # this method can also be used on hierarchical axis
+        await self.client.disable_cover_crypt_attribute(
+            "Security Level::Protected", self.privkey_uid
+        )
+
+        # disabled attributes can no longer be used to encrypt data
+
+        # New data encryption for `Department::R&D` will fail
+        with self.assertRaises(Exception):
+            await self.client.cover_crypt_encryption(
+                "Department::R&D && Security Level::Protected",
+                protected_rd_data,
+                self.pubkey_uid,
+            )
+
+        # Decryption of old ciphertext is still possible
+        new_protected_rd_plaintext, _ = await self.client.cover_crypt_decryption(
+            protected_rd_ciphertext, confidential_rd_fin_user_key_uid
+        )
+        self.assertEqual(new_protected_rd_plaintext, protected_rd_data)
+
+        # /!\ this operation is irreversible and may cause data loss
+
+        await self.client.remove_cover_crypt_attribute(
+            "Department::R&D", self.privkey_uid
+        )
+        # removing attribute from hierarchical axis is prohibited
+        with self.assertRaises(Exception):
+            await self.client.remove_cover_crypt_attribute(
+                "Security Level::Protected", self.privkey_uid
+            )
+
+        # removed attributes can no longer be used to encrypt or decrypt
+        with self.assertRaises(Exception):
+            await self.client.decrypt(
+                protected_rd_ciphertext,
+                confidential_rd_fin_user_key_uid,
             )
 
     async def test_combined_kms_native(self) -> None:
@@ -448,9 +552,9 @@ class TestCoverCryptKMS(unittest.IsolatedAsyncioTestCase):
 
         # Encrypt data using KMS
         kms_ciphertext = await self.client.cover_crypt_encryption(
-            "Department::MKG && Security Level::Protected",
-            b"kms_message",
-            self.pubkey_uid,
+            encryption_policy_str="Department::MKG && Security Level::Protected",
+            data=b"kms_message",
+            public_key_identifier=self.pubkey_uid,
             header_metadata=b"kms_header",
             authentication_data=b"token1",
         )
